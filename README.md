@@ -70,6 +70,9 @@ pnpm pages:dev
 an error when running the app with `pnpm pages:dev`. But, the functions work as expected after
 deploying.
 
+⚠️ **Warning #3**: if working in pages, root(/) path is not working. error message is `Not Found`.
+But `pnpm dev` is working. I want to fix this.
+
 ## Deploy
 
 - Deploy code to pages:
