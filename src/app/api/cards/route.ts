@@ -6,7 +6,7 @@ import { cardsTable, cardStatesTable } from '@/server/db/schema';
 import { getAuthUser } from '@/lib/supabase/server';
 import { syncUser } from '@/server/functions/users';
 import { createInitialCardState } from '@/lib/spaced-repetition';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, or, like, sql, isNull, isNotNull, lte } from 'drizzle-orm';
 import { z } from 'zod';
 
 export const runtime = 'edge';
@@ -75,6 +75,67 @@ export async function GET(request: Request) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // クエリパラメータを取得
+    const url = new URL(request.url);
+    const searchQuery = url.searchParams.get('search') || '';
+    const tagFilter = url.searchParams.get('tag') || '';
+    const reviewStatus = url.searchParams.get('reviewStatus') || ''; // 'all' | 'unreviewed' | 'reviewed' | 'due'
+
+    // ベースの条件
+    const conditions = [eq(cardsTable.user_id, user.id)];
+
+    // 検索クエリでフィルター
+    if (searchQuery) {
+      conditions.push(
+        or(
+          like(cardsTable.question, `%${searchQuery}%`),
+          like(cardsTable.answer, `%${searchQuery}%`)
+        )!
+      );
+    }
+
+    // タグでフィルター
+    if (tagFilter) {
+      conditions.push(
+        or(
+          like(cardsTable.tags, `%${tagFilter}%`),
+          like(cardsTable.tags, `%,${tagFilter},%`),
+          like(cardsTable.tags, `${tagFilter},%`),
+          like(cardsTable.tags, `%,${tagFilter}`),
+          eq(cardsTable.tags, tagFilter)
+        )!
+      );
+    }
+
+    // レビュー状態でフィルター
+    if (reviewStatus === 'unreviewed') {
+      // 未レビュー（rep_count が 0 または null）
+      conditions.push(
+        or(
+          eq(cardStatesTable.rep_count, 0),
+          isNull(cardStatesTable.rep_count)
+        )!
+      );
+    } else if (reviewStatus === 'reviewed') {
+      // レビュー済み（rep_count > 0）
+      conditions.push(
+        and(
+          isNotNull(cardStatesTable.rep_count),
+          sql`${cardStatesTable.rep_count} > 0`
+        )!
+      );
+    } else if (reviewStatus === 'due') {
+      // 今日レビュー対象（next_review_at <= 今日の終わり）
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+      conditions.push(
+        and(
+          isNotNull(cardStatesTable.next_review_at),
+          lte(cardStatesTable.next_review_at, todayEnd.getTime())
+        )!
+      );
+    }
+
     const cards = await db
       .select({
         id: cardsTable.id,
@@ -98,7 +159,7 @@ export async function GET(request: Request) {
           eq(cardStatesTable.user_id, user.id)
         )
       )
-      .where(eq(cardsTable.user_id, user.id))
+      .where(and(...conditions))
       .orderBy(cardsTable.created_at);
 
     return Response.json(cards);

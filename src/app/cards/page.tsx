@@ -27,10 +27,25 @@ export default function CardsPage() {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTag, setSelectedTag] = useState('');
+  const [reviewStatus, setReviewStatus] = useState('all');
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
 
   useEffect(() => {
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    fetchTags();
+  }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      fetchCards();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, selectedTag, reviewStatus]);
 
   const checkAuth = async () => {
     const {
@@ -42,10 +57,34 @@ export default function CardsPage() {
       return;
     }
 
-    fetchCards();
+    fetchCards(true);
   };
 
-  const fetchCards = async () => {
+  const fetchTags = async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        return;
+      }
+
+      const response = await fetch('/api/tags', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableTags(data.tags || []);
+      }
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+    }
+  };
+
+  const fetchCards = async (isInitialLoad = false) => {
     try {
       const {
         data: { session },
@@ -56,7 +95,24 @@ export default function CardsPage() {
         return;
       }
 
-      const response = await fetch('/api/cards', {
+      if (isInitialLoad) {
+        setLoading(true);
+      }
+
+      // クエリパラメータを構築
+      const params = new URLSearchParams();
+      if (searchQuery) {
+        params.append('search', searchQuery);
+      }
+      if (selectedTag) {
+        params.append('tag', selectedTag);
+      }
+      if (reviewStatus !== 'all') {
+        params.append('reviewStatus', reviewStatus);
+      }
+
+      const url = `/api/cards${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -70,7 +126,9 @@ export default function CardsPage() {
     } catch (error) {
       console.error('Error fetching cards:', error);
     } finally {
-      setLoading(false);
+      if (isInitialLoad) {
+        setLoading(false);
+      }
     }
   };
 
@@ -107,7 +165,7 @@ export default function CardsPage() {
       });
 
       if (response.ok) {
-        fetchCards(); // 一覧を再取得
+        fetchCards(false); // 一覧を再取得
       }
     } catch (error) {
       console.error('Error deleting card:', error);
@@ -148,6 +206,80 @@ export default function CardsPage() {
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">カード一覧</h2>
+
+          {/* フィルターUI */}
+          <div className="bg-white shadow rounded-lg p-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* 検索バー */}
+              <div>
+                <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+                  検索
+                </label>
+                <input
+                  id="search"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="質問・回答を検索..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+
+              {/* タグフィルター */}
+              <div>
+                <label htmlFor="tag" className="block text-sm font-medium text-gray-700 mb-1">
+                  タグ
+                </label>
+                <select
+                  id="tag"
+                  value={selectedTag}
+                  onChange={(e) => setSelectedTag(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">すべてのタグ</option>
+                  {availableTags.map((tag) => (
+                    <option key={tag} value={tag}>
+                      {tag}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* レビュー状態フィルター */}
+              <div>
+                <label htmlFor="reviewStatus" className="block text-sm font-medium text-gray-700 mb-1">
+                  レビュー状態
+                </label>
+                <select
+                  id="reviewStatus"
+                  value={reviewStatus}
+                  onChange={(e) => setReviewStatus(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="all">すべて</option>
+                  <option value="unreviewed">未レビュー</option>
+                  <option value="reviewed">レビュー済み</option>
+                  <option value="due">今日レビュー対象</option>
+                </select>
+              </div>
+            </div>
+
+            {/* フィルターリセットボタン */}
+            {(searchQuery || selectedTag || reviewStatus !== 'all') && (
+              <div className="mt-4">
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedTag('');
+                    setReviewStatus('all');
+                  }}
+                  className="text-sm text-indigo-600 hover:text-indigo-900 font-medium"
+                >
+                  フィルターをリセット
+                </button>
+              </div>
+            )}
+          </div>
 
           {cards.length === 0 ? (
             <div className="text-center py-12">
