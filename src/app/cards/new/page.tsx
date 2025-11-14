@@ -2,7 +2,7 @@
 
 // カード作成画面
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -11,8 +11,63 @@ export default function NewCardPage() {
   const router = useRouter();
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
-  const [tags, setTags] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingTags, setLoadingTags] = useState(true);
+
+  useEffect(() => {
+    fetchTags();
+  }, []);
+
+  const fetchTags = async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        return;
+      }
+
+      const response = await fetch('/api/tags', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableTags(data.tags || []);
+      }
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+    } finally {
+      setLoadingTags(false);
+    }
+  };
+
+  const handleTagToggle = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const handleAddNewTag = () => {
+    const trimmedTag = newTag.trim();
+    if (trimmedTag && !selectedTags.includes(trimmedTag)) {
+      setSelectedTags((prev) => [...prev, trimmedTag]);
+      if (!availableTags.includes(trimmedTag)) {
+        setAvailableTags((prev) => [...prev, trimmedTag].sort());
+      }
+      setNewTag('');
+    }
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setSelectedTags((prev) => prev.filter((t) => t !== tag));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +92,7 @@ export default function NewCardPage() {
         body: JSON.stringify({
           question,
           answer,
-          tags: tags || undefined,
+          tags: selectedTags.length > 0 ? selectedTags.join(',') : undefined,
         }),
       });
 
@@ -118,17 +173,78 @@ useEffect(() => {
             </div>
 
             <div className="mb-6">
-              <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-2">
-                タグ（カンマ区切り）
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                タグ
               </label>
-              <input
-                id="tags"
-                type="text"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="例: react,hooks"
-              />
+
+              {/* 選択されたタグの表示 */}
+              {selectedTags.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {selectedTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-indigo-200 focus:outline-none"
+                      >
+                        <span className="sr-only">削除</span>
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* 既存のタグから選択 */}
+              {!loadingTags && availableTags.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs text-gray-500 mb-2">既存のタグから選択:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {availableTags.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => handleTagToggle(tag)}
+                        className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                          selectedTags.includes(tag)
+                            ? 'bg-indigo-600 text-white border-indigo-600'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 新しいタグを追加 */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddNewTag();
+                    }
+                  }}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="新しいタグを入力してEnter"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddNewTag}
+                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  追加
+                </button>
+              </div>
             </div>
 
             <div className="flex justify-end space-x-4">
