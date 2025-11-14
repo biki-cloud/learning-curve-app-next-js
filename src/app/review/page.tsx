@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 interface ReviewCard {
   card_id: number;
@@ -201,15 +202,13 @@ export default function ReviewPage() {
                 </div>
               )}
 
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                {currentCard.question}
-              </h2>
+              <div className="text-2xl font-bold text-gray-900 mb-6">
+                <MarkdownRenderer content={currentCard.question} />
+              </div>
 
               {showAnswer && (
                 <div className="mt-6 p-4 bg-gray-50 rounded-md">
-                  <p className="text-gray-700 whitespace-pre-wrap font-mono text-sm">
-                    {currentCard.answer}
-                  </p>
+                  <MarkdownRenderer content={currentCard.answer} />
                 </div>
               )}
             </div>

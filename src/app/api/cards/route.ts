@@ -6,7 +6,7 @@ import { cardsTable, cardStatesTable } from '@/server/db/schema';
 import { getAuthUser } from '@/lib/supabase/server';
 import { syncUser } from '@/server/functions/users';
 import { createInitialCardState } from '@/lib/spaced-repetition';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 
 export const runtime = 'edge';
@@ -76,8 +76,28 @@ export async function GET(request: Request) {
     }
 
     const cards = await db
-      .select()
+      .select({
+        id: cardsTable.id,
+        user_id: cardsTable.user_id,
+        question: cardsTable.question,
+        answer: cardsTable.answer,
+        tags: cardsTable.tags,
+        created_at: cardsTable.created_at,
+        // 習熟度情報
+        ease: cardStatesTable.ease,
+        interval_days: cardStatesTable.interval_days,
+        rep_count: cardStatesTable.rep_count,
+        next_review_at: cardStatesTable.next_review_at,
+        last_reviewed_at: cardStatesTable.last_reviewed_at,
+      })
       .from(cardsTable)
+      .leftJoin(
+        cardStatesTable,
+        and(
+          eq(cardStatesTable.card_id, cardsTable.id),
+          eq(cardStatesTable.user_id, user.id)
+        )
+      )
       .where(eq(cardsTable.user_id, user.id))
       .orderBy(cardsTable.created_at);
 

@@ -92,16 +92,29 @@ export default function NewCardPage() {
             <div className="mb-4">
               <label htmlFor="answer" className="block text-sm font-medium text-gray-700 mb-2">
                 回答 <span className="text-red-500">*</span>
+                <span className="ml-2 text-xs text-gray-500">(Markdown対応)</span>
               </label>
               <textarea
                 id="answer"
                 required
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
-                rows={6}
+                rows={12}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
-                placeholder="例: 副作用処理を行うHooks"
+                placeholder={`例: 副作用処理を行うHooks
+
+\`\`\`javascript
+useEffect(() => {
+  // 副作用処理
+}, [dependencies]);
+\`\`\`
+
+- 第一引数: 実行する関数
+- 第二引数: 依存配列`}
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Markdown形式で記述できます。コードブロック、リスト、リンクなどが使用可能です。
+              </p>
             </div>
 
             <div className="mb-6">
