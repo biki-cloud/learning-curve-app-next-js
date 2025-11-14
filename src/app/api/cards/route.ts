@@ -8,6 +8,7 @@ import { syncUser } from '@/server/functions/users';
 import { createInitialCardState } from '@/lib/spaced-repetition';
 import { eq, and, or, like, sql, isNull, isNotNull, lte } from 'drizzle-orm';
 import { z } from 'zod';
+import { getTodayEndJST } from '@/lib/date-utils';
 
 export const runtime = 'edge';
 
@@ -129,13 +130,12 @@ export async function GET(request: Request) {
         )!
       );
     } else if (reviewStatus === 'due') {
-      // 今日レビュー対象（next_review_at <= 今日の終わり）
-      const todayEnd = new Date();
-      todayEnd.setHours(23, 59, 59, 999);
+      // 今日レビュー対象（next_review_at <= 今日の終わり、日本時間）
+      const todayEndJST = getTodayEndJST();
       conditions.push(
         and(
           isNotNull(cardStatesTable.next_review_at),
-          lte(cardStatesTable.next_review_at, todayEnd.getTime())
+          lte(cardStatesTable.next_review_at, todayEndJST)
         )!
       );
     }

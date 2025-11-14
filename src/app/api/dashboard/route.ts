@@ -4,6 +4,7 @@ import { db } from '@/server/db';
 import { cardsTable, cardStatesTable } from '@/server/db/schema';
 import { getAuthUser } from '@/lib/supabase/server';
 import { eq, lte, and } from 'drizzle-orm';
+import { getTodayEndJST } from '@/lib/date-utils';
 
 export const runtime = 'edge';
 
@@ -15,9 +16,10 @@ export async function GET(request: Request) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const now = Date.now();
+    // 日本時間の「今日」の終了時刻を使用
+    const todayEndJST = getTodayEndJST();
 
-    // 今日のレビュー対象カード数
+    // 今日のレビュー対象カード数（日本時間の「今日」までに期限が来たカード）
     const todayReviewCards = await db
       .select()
       .from(cardsTable)
@@ -28,7 +30,7 @@ export async function GET(request: Request) {
       .where(
         and(
           eq(cardStatesTable.user_id, user.id),
-          lte(cardStatesTable.next_review_at, now)
+          lte(cardStatesTable.next_review_at, todayEndJST)
         )
       );
 
