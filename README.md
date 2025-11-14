@@ -1,82 +1,124 @@
-<h1 align="center">Next.js + Cloudflare D1 SQL + Drizzle ORM + Drizzle Kit + Cloudflare Pages starter kit</h1>
+# LearnCurve - エンジニア向け学習曲線アプリ
 
-# Getting started
+忘却曲線に基づいた最適なタイミングで、エンジニアが知識を"思い出せる"ようにする学習アプリ。
 
-## Prerequisites
+## 🚀 技術スタック
 
-1. Node.js >=v20.11.0
-2. pnpm >=v9.15.1
+- **フロントエンド**: Next.js 15 (App Router), TypeScript, TailwindCSS
+- **ホスティング**: Cloudflare Pages
+- **データベース**: Cloudflare D1 (SQLite)
+- **ORM**: Drizzle ORM
+- **認証**: Supabase Auth (Magic Link)
 
-## Initialise the database(s)
+## 📋 セットアップ
 
-1. [Create a production D1 database.](https://developers.cloudflare.com/d1/get-started/#3-create-a-database)
-2. The starter kit focuses on 2 environments, **development on local machine** and **production on
-   remote machine**. So, create the following files:
+### 1. 依存関係のインストール
 
-   1. `.env.development`: duplicate `.env.example`, and set the variables to development values.
-   2. `.env.production`: duplicate `.env.example`, and set the variables to production values.
-   3. `wrangler.toml.development`: duplicate `wrangler.toml.example`, and set the variables to
-      development values.
-   4. `wrangler.toml.production`: duplicate `wrangler.toml.example`, and set the variables to
-      production values.
-
-3. Install the app's dependencies:
-
-```sh
+```bash
 pnpm install
 ```
 
-4. Generate db migration files (that documents schema changes in an SQL script).
+### 2. Supabase プロジェクトの作成
 
-```sh
-pnpm db:generate
+1. [Supabase](https://supabase.com) でプロジェクトを作成
+2. プロジェクト設定から API URL と Anon Key を取得
+
+### 3. 環境変数の設定
+
+`.env.development` と `.env.production` に以下を設定：
+
+```env
+NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
 ```
 
-5. Run db migrations (that executes the SQL script to update the database to match the schema).
+### 4. Cloudflare D1 データベースの作成
 
-- dev (local) db: `pnpm db:migrate:dev`
-- prod (remote) db: `pnpm db:migrate:prod`
+```bash
+wrangler d1 create nextjs-d1-drizzle-cloudflare-pages
+```
 
-6. View the database using a graphical user interface:
+作成された `database_id` を `wrangler.toml` に設定します。
 
-- dev (local) db: `pnpm db:studio:dev`
-- prod (remote) db: `pnpm db:studio:prod`
+### 5. データベースマイグレーション
 
-## Run the app
+```bash
+# マイグレーションファイルの生成
+pnpm db:generate
 
-- Run Next.js on dev. Ideal for development since it supports hot-reload/fast refresh.
+# ローカル環境にマイグレーション適用
+pnpm db:migrate:dev
 
-```sh
+# 本番環境にマイグレーション適用
+pnpm db:migrate:prod
+```
+
+### 6. Supabase 認証設定
+
+Supabase ダッシュボードで以下を設定：
+
+1. Authentication > URL Configuration
+   - Redirect URLs に `http://localhost:3000/auth/callback` を追加（開発環境）
+   - 本番環境の URL も追加
+
+2. Authentication > Email Templates
+   - Magic Link のテンプレートを確認（必要に応じてカスタマイズ）
+
+## 🏃 開発
+
+### ローカル開発サーバー起動
+
+```bash
 pnpm dev
 ```
 
-⚠️ **Warning**: `next start` will return an error due to how the application is designed to run on
-Cloudflare pages.
+### Cloudflare Pages でローカル実行
 
-- Run Cloudflare Pages locally. Ideal to test how the app would work after being deployed.
-
-```sh
+```bash
 pnpm pages:dev
 ```
 
-⚠️ **Warning #1**: Connecting to the prod remote db on the local code
-[is not supported](https://developers.cloudflare.com/d1/build-with-d1/local-development/).
-`pnpm db:studio:prod` is not work. error is
-`7403: The given account is not valid or is not authorized to access this service`.
+## 📦 デプロイ
 
-⚠️ **Warning #2**: All pages deployed to Cloudflare Pages run on edge runtime, whereas
-[ISR only works on Nodejs runtime](https://developers.cloudflare.com/pages/framework-guides/nextjs/ssr/supported-features/)
-(because how Vercel designed their functions); so, some functions like `revalidatePath` will throw
-an error when running the app with `pnpm pages:dev`. But, the functions work as expected after
-deploying.
+### Cloudflare Pages へのデプロイ
 
-⚠️ **Warning #3**: if working in pages, root(/) path is not working. error message is `Not Found`.
-But `pnpm dev` is working. I want to fix this.
-
-## Deploy
-
-- Deploy code to pages:
-
-```sh
+```bash
 pnpm pages:deploy
 ```
+
+### GitHub 連携
+
+1. GitHub リポジトリに push
+2. Cloudflare Pages で GitHub リポジトリを連携
+3. ビルドコマンド: `pnpm pages:build`
+4. 環境変数を Cloudflare Pages の設定で追加
+
+## 📚 主な機能
+
+- ✅ Magic Link 認証
+- ✅ カード（学習項目）の作成・編集・削除
+- ✅ 忘却曲線に基づいたレビュー機能
+- ✅ ダッシュボード（今日のレビュー数、全カード数など）
+
+## 🗂️ プロジェクト構造
+
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── api/               # API Routes
+│   ├── auth/              # 認証関連
+│   ├── cards/             # カード管理画面
+│   ├── home/              # ダッシュボード
+│   ├── login/             # ログイン画面
+│   └── review/           # レビュー画面
+├── lib/                   # ユーティリティ
+│   ├── supabase/         # Supabase クライアント
+│   └── spaced-repetition.ts  # 記憶アルゴリズム
+└── server/               # サーバーサイド
+    ├── db/               # データベース設定
+    └── functions/       # サーバー関数
+```
+
+## 📝 ライセンス
+
+MIT

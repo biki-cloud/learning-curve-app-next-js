@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "db:generate": "drizzle-kit generate",
-    "db:migrate:dev": "pnpm setup:dev && wrangler d1 migrations apply nextjs-d1-drizzle-cloudflare-pages --local",
-    "db:migrate:prod": "pnpm setup:prod && wrangler d1 migrations apply nextjs-d1-drizzle-cloudflare-pages --remote",
+    "db:migrate:dev": "pnpm setup:dev && wrangler d1 migrations apply lerning-curve-app --local",
+    "db:migrate:prod": "pnpm setup:prod && wrangler d1 migrations apply learning-curve-app --remote",
     "db:studio:dev": "pnpm setup:dev && cross-env DB_LOCAL_PATH=$(find .wrangler/state/v3/d1/miniflare-D1DatabaseObject -type f -name '*.sqlite' -print -quit) drizzle-kit studio --port 3094",
     "db:studio:prod": "pnpm setup:prod && drizzle-kit studio --port 3098",
     "build": "next build",
@@ -18,6 +18,7 @@
     "pages:deploy": "pnpm setup:prod && pnpm pages:build && pnpm wrangler pages deploy"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.81.1",
     "@tanstack/react-query": "^5.62.10",
     "next": "14.2.21",
     "react": "18.3.1",
