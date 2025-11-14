@@ -33,18 +33,18 @@ export default function CardsPage() {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
 
   useEffect(() => {
-    checkAuth();
+    void checkAuth();
   }, []);
 
   useEffect(() => {
-    fetchTags();
+    void fetchTags();
   }, []);
 
   useEffect(() => {
     if (!loading) {
-      fetchCards();
+      void fetchCards();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
   }, [searchQuery, selectedTag, reviewStatus]);
 
   const checkAuth = async () => {
@@ -57,7 +57,7 @@ export default function CardsPage() {
       return;
     }
 
-    fetchCards(true);
+    void fetchCards(true);
   };
 
   const fetchTags = async () => {
@@ -76,8 +76,9 @@ export default function CardsPage() {
         },
       });
       if (response.ok) {
-        const data = await response.json();
-        setAvailableTags(data.tags || []);
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        const data = await response.json() as { tags?: string[] };
+        setAvailableTags(data.tags ?? []);
       }
     } catch (error) {
       console.error('Error fetching tags:', error);
@@ -118,7 +119,8 @@ export default function CardsPage() {
         },
       });
       if (response.ok) {
-        const data = await response.json();
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        const data = await response.json() as Card[];
         setCards(data);
       } else {
         console.error('Failed to fetch cards:', response.status, response.statusText);
@@ -165,7 +167,7 @@ export default function CardsPage() {
       });
 
       if (response.ok) {
-        fetchCards(false); // 一覧を再取得
+        void fetchCards(false); // 一覧を再取得
       }
     } catch (error) {
       console.error('Error deleting card:', error);

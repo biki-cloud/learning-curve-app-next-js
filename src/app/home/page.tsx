@@ -19,7 +19,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
+    void checkAuth();
   }, []);
 
   const checkAuth = async () => {
@@ -32,7 +32,7 @@ export default function HomePage() {
       return;
     }
 
-    fetchDashboard();
+    void fetchDashboard();
   };
 
   const fetchDashboard = async () => {
@@ -52,7 +52,8 @@ export default function HomePage() {
         },
       });
       if (response.ok) {
-        const data = await response.json();
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        const data = await response.json() as DashboardData;
         setDashboardData(data);
       }
     } catch (error) {

@@ -31,7 +31,7 @@ export default function ReviewPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    checkAuth();
+    void checkAuth();
   }, []);
 
   const checkAuth = async () => {
@@ -44,7 +44,7 @@ export default function ReviewPage() {
       return;
     }
 
-    fetchReviewCards();
+    void fetchReviewCards();
   };
 
   const fetchReviewCards = async () => {
@@ -64,7 +64,8 @@ export default function ReviewPage() {
         },
       });
       if (response.ok) {
-        const data = await response.json();
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        const data = await response.json() as ReviewCard[];
         setCards(data);
         if (data.length === 0) {
           setLoading(false);
@@ -153,6 +154,9 @@ export default function ReviewPage() {
   }
 
   const currentCard = cards[currentIndex];
+  if (!currentCard) {
+    return null;
+  }
   const progress = ((currentIndex + 1) / cards.length) * 100;
 
   return (

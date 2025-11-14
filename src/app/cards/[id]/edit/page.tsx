@@ -2,6 +2,8 @@
 
 // カード編集画面
 
+export const runtime = 'edge';
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -32,13 +34,13 @@ export default function EditCardPage({
   const [loadingTags, setLoadingTags] = useState(true);
 
   useEffect(() => {
-    checkAuth();
+    void checkAuth();
   }, []);
 
   useEffect(() => {
     if (cardId !== null) {
-      fetchCard();
-      fetchTags();
+      void fetchCard();
+      void fetchTags();
     }
   }, [cardId]);
 
@@ -59,8 +61,9 @@ export default function EditCardPage({
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setAvailableTags(data.tags || []);
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        const data = await response.json() as { tags?: string[] };
+        setAvailableTags(data.tags ?? []);
       }
     } catch (error) {
       console.error('Error fetching tags:', error);
@@ -183,8 +186,9 @@ export default function EditCardPage({
       if (response.ok) {
         router.push('/cards');
       } else {
-        const error = await response.json();
-        alert(`エラー: ${error.error}`);
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        const error = await response.json() as { error?: string };
+        alert(`エラー: ${error.error ?? 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error updating card:', error);

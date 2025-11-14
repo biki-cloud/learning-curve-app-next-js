@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { env } from '@/env';
 
 // Edge Runtime 用の Supabase クライアント作成
-export function createServerClient(request?: Request) {
+export function createServerClient(_request?: Request) {
   return createClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -38,7 +38,7 @@ export async function getAuthUser(request?: Request) {
     error,
   } = await supabase.auth.getUser(token);
 
-  if (error || !user) {
+  if (error !== null || !user) {
     return null;
   }
 

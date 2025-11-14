@@ -18,7 +18,7 @@ export default function NewCardPage() {
   const [loadingTags, setLoadingTags] = useState(true);
 
   useEffect(() => {
-    fetchTags();
+    void fetchTags();
   }, []);
 
   const fetchTags = async () => {
@@ -38,8 +38,9 @@ export default function NewCardPage() {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setAvailableTags(data.tags || []);
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        const data = await response.json() as { tags?: string[] };
+        setAvailableTags(data.tags ?? []);
       }
     } catch (error) {
       console.error('Error fetching tags:', error);
@@ -99,8 +100,9 @@ export default function NewCardPage() {
       if (response.ok) {
         router.push('/cards');
       } else {
-        const error = await response.json();
-        alert(`エラー: ${error.error}`);
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        const error = await response.json() as { error?: string };
+        alert(`エラー: ${error.error ?? 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error creating card:', error);

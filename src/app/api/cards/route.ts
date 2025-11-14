@@ -45,6 +45,10 @@ export async function POST(request: Request) {
       })
       .returning();
 
+    if (!card) {
+      return Response.json({ error: 'Failed to create card' }, { status: 500 });
+    }
+
     // カード状態を初期化
     const initialState = createInitialCardState(now);
     await db.insert(cardStatesTable).values({
@@ -77,9 +81,9 @@ export async function GET(request: Request) {
 
     // クエリパラメータを取得
     const url = new URL(request.url);
-    const searchQuery = url.searchParams.get('search') || '';
-    const tagFilter = url.searchParams.get('tag') || '';
-    const reviewStatus = url.searchParams.get('reviewStatus') || ''; // 'all' | 'unreviewed' | 'reviewed' | 'due'
+    const searchQuery = url.searchParams.get('search') ?? '';
+    const tagFilter = url.searchParams.get('tag') ?? '';
+    const reviewStatus = url.searchParams.get('reviewStatus') ?? ''; // 'all' | 'unreviewed' | 'reviewed' | 'due'
 
     // ベースの条件
     const conditions = [eq(cardsTable.user_id, user.id)];
