@@ -7,6 +7,9 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'LearnCurve - エンジニア向け学習曲線アプリ',
   description: '忘却曲線に基づいた最適なタイミングで知識を思い出せる学習アプリ',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
