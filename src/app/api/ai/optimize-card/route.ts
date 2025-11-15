@@ -28,7 +28,7 @@ interface OptimizeResponse {
 // AIプロンプト生成関数
 function createPrompt(question: string, answer?: string): string {
   const hasAnswer = answer && answer.trim().length > 0;
-  
+
   if (hasAnswer) {
     // 添削モード
     return `あなたは学習カード作成の専門家です。ユーザーが作成した学習カードを添削し、より理解しやすく、記憶に定着しやすい形に改善してください。
@@ -67,93 +67,95 @@ function createPrompt(question: string, answer?: string): string {
 
 分割が必要ない場合は、shouldSplit: false とし、splitCards は空配列にしてください。`;
   } else {
-    // 生成モード
-    return `あなたは学習カード作成の専門家です。ユーザーが指定したテーマ・問題から、最適な学習カードの質問と回答を生成してください。
+    // 生成モード（GPT-4.1専用最適化版）
+    return `以下のテーマ・問題から、最適な学習カードを生成または分割してください。
 
-## テーマ・問題
+## 🎯 テーマ・問題
+
 ${question}
 
-## 📏 カード作成のベストプラクティス（必須）
+---
 
-### カードの粒度：1つの概念に1つのカード
-**最重要原則**: 1つのカードには、1つの明確な概念や事実だけを含めてください。複数の概念を1つのカードに詰め込むと、記憶が定着しにくくなります。
+# 📏 必須ルール（GPT-4.1最適化版）
 
-❌ 悪い例：複数の概念
-質問: ReactのHooksについて説明してください
-回答: useStateは状態管理、useEffectは副作用処理、useContextはコンテキスト取得、useMemoはメモ化...
+## 1. 1カード1概念（最優先）
 
-✅ 良い例：1つの概念
-質問: ReactのuseStateは何？
-回答: 関数コンポーネントで状態を管理するためのHook。配列の分割代入で現在の値と更新関数を取得する。
+カードには1つの概念・事実・比較軸のみを含めてください。
+複数ある場合は必ず分割してください。
 
-### ✍️ 質問の書き方
-- 明確で具体的な質問にする
-- 「〜とは？」「〜は何？」「〜の違いは？」など、答えやすい形式にする
-- 文脈がなくても理解できるようにする
+分割対象の例：
+- 複数の専門用語（例: useState / useEffect / useMemo）
+- 比較（例: HTTP vs HTTPS）
+- 種類・分類（例: トランザクション分離レベルの4種類）
+- 手順・フェーズ（例: OAuthの流れ）
+- 原因と結果が複数ある場合
+- 長くなりすぎる場合
 
-良い質問の例：
-- "JavaScriptのクロージャとは？"
-- "HTTPとHTTPSの違いは？"
-- "光合成の化学反応式は？"
+---
 
-### 📝 回答の書き方
-- 簡潔に、要点を押さえる（長すぎると覚えにくい）
-- Markdownを使って構造化する（コードブロック、リスト、強調など）
-- 具体例を含めると記憶に残りやすい
-- 自分が後で見返したときに理解できるように書く
+## 2. 質問（カードタイトル）のルール
 
-良い回答の例：
-- "関数とその関数が定義されたスコープの変数を束縛したもの。内側の関数が外側の変数にアクセスできる。"
-- "Thank you / Thanks"
-- "6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂"
+- 「〜とは？」「〜は何？」「〜の違いは？」を基本とする
+- 文脈なしでも理解できる
+- 概念の単位を揃える（抽象度・粒度が統一）
 
-## タスク
-1. テーマを分析し、含まれる概念を特定する
-2. 各概念に対して、1つのカードを作成する（1つの概念 = 1つのカード）
-3. 明確で具体的な質問を作成する（「〜とは？」「〜は何？」「〜の違いは？」など）
-4. 簡潔で要点を押さえた回答を生成する
-5. Markdown形式で構造化する（コードブロック、リスト、強調など）
-6. 具体例を含めて記憶に残りやすくする
-7. 複数の概念が含まれている場合は、必ず分割する
+---
 
-## 出力形式（JSON）
-**重要: コードブロックや説明文は一切含めず、JSONオブジェクトのみを返してください。**
+## 3. 回答（content）のルール
 
-以下のJSON形式で返してください（コードブロック記号は使わない）：
+- 最初に本質の1行まとめを書く（超重要）
+- 次に補足説明（理由・仕組み・特徴のいずれか）
+- "例"か"比較"を最低1つ含める（記憶に残るため）
+- Markdownのリストや強調を活用して整理
+
+**推奨構成（GPT-4.1向け）**
+1. 要点1行
+2. 詳細説明
+3. 例・比較（どちらか必須）
+
+---
+
+# 🧠 GPT-4.1に求めるタスク
+
+1. テーマの概念を正確に抽出
+2. 各概念を独立カードに構造化
+3. 明確で答えやすい質問文に変換
+4. 簡潔＋深い回答を生成
+5. 例・理由・比較を適切に追加
+6. 概念数に応じて shouldSplit を判断
+7. JSONを完全に有効な形式で返す
+
+---
+
+# 📤 出力形式（JSONのみ）
+
 {
-  "optimizedQuestion": "生成した質問（単一概念の場合のみ使用）",
-  "generatedAnswer": "生成した回答（単一概念の場合のみ使用、Markdown形式可）",
+  "optimizedQuestion": "単一概念の場合のみ。複数概念なら空文字列",
+  "generatedAnswer": "単一概念の場合のみ。Markdown可。複数概念なら空文字列",
   "shouldSplit": true/false,
   "splitCards": [
     {
-      "title": "分割カード1のタイトル（質問文）",
-      "content": "分割カード1の内容（回答、Markdown形式可）"
+      "title": "カード1の質問文",
+      "content": "カード1の回答（Markdown可）"
     }
   ]
 }
 
-## 分割の判断基準
-テーマに複数の概念が含まれている場合は、**必ず分割してください**。以下のような場合：
-- 複数の独立した概念が含まれている（例: "ReactのHooksについて" → useState、useEffect、useContextなど）
-- 複数の項目を説明する必要がある（例: "HTTPとHTTPSの違い" → HTTPとは、HTTPSとは、違いは何か）
-- 複数の手順や要素がある（例: "トランザクション分離レベル" → 各レベルの説明）
+---
 
-**重要**: テーマが1つの概念のみを含む場合は、shouldSplit: false とし、optimizedQuestion と generatedAnswer に値を設定してください。
-テーマが複数の概念を含む場合は、shouldSplit: true とし、splitCards に各概念ごとのカードを配列で設定してください。この場合、optimizedQuestion と generatedAnswer は空文字列にしてください。
+# ⚠ JSON整形ルール
 
-**JSON形式の注意事項**:
-- 文字列内の改行は \\n としてエスケープしてください
-- 文字列内のバックスラッシュは \\\\ としてエスケープしてください
-- 文字列内のダブルクォートは \\" としてエスケープしてください
-- コードブロック内の文字列も適切にエスケープしてください
-- JSONは完全に有効な形式で返してください（途中で切れないように）`;
+- 改行は \\n
+- バックスラッシュは \\\\
+- ダブルクォートは \\"
+- JSONオブジェクト以外の文字列を出さない`;
   }
 }
 
 // OpenAI API呼び出し
 async function callOpenAI(prompt: string): Promise<string> {
   const apiKey = env.OPENAI_API_KEY;
-  
+
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is not configured');
   }
@@ -165,12 +167,13 @@ async function callOpenAI(prompt: string): Promise<string> {
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4.1',
       messages: [
-      {
-        role: 'system',
-        content: 'あなたは学習カード作成の専門家です。最も重要な原則は「1つの概念に1つのカード」です。複数の概念を含むテーマは必ず分割してください。応答は必ず有効なJSONオブジェクトのみを返してください。コードブロックや説明文は含めず、JSONオブジェクトのみを返してください。',
-      },
+        {
+          role: 'system',
+          content:
+            'あなたは高度な構造化と知識整理に特化した学習カード作成の専門家です。\n最重要原則は「1つの概念に1つのカード」です。\nテーマに複数の概念・用語・観点・手順・比較が含まれる場合は、必ず分割してください。\n\nあなたの目的は、ユーザーが後から読み返したときに「一瞬で理解できる」最適な学習カードを作成することです。\n\n- 情報抽出の正確さ\n- 粒度の均一性\n- 概念分割の適切さ\n- Markdownでの構造化\n- JSONの厳密な整合性\n\nこれらを高いレベルで実行してください。\n\n返答は必ず **有効なJSONオブジェクトのみ** を返し、文章説明・前置き・コードブロックは一切含めてはいけません。',
+        },
         {
           role: 'user',
           content: prompt,
@@ -186,7 +189,7 @@ async function callOpenAI(prompt: string): Promise<string> {
     throw new Error(`OpenAI API error: ${response.status} ${error}`);
   }
 
-  const data = (await response.json()) as {
+  const data = (await response.json()) as unknown as {
     choices?: Array<{ message?: { content?: string } }>;
   };
 
@@ -201,14 +204,20 @@ async function callOpenAI(prompt: string): Promise<string> {
 // JSONレスポンスをパース
 function parseAIResponse(content: string, hasAnswer: boolean): OptimizeResponse {
   let jsonString = content.trim();
-  
+
   // JSON全体を囲むコードブロックのみを除去（文字列値内のコードブロックは残す）
   // パターン1: 先頭が```jsonで始まり、最後が```で終わる場合のみ除去
   if (jsonString.startsWith('```json') && jsonString.endsWith('```')) {
-    jsonString = jsonString.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+    jsonString = jsonString
+      .replace(/^```json\s*/, '')
+      .replace(/\s*```$/, '')
+      .trim();
   } else if (jsonString.startsWith('```') && jsonString.endsWith('```')) {
     // パターン2: 先頭が```で始まり、最後が```で終わる場合（json以外の言語タグ）
-    jsonString = jsonString.replace(/^```[a-z]*\s*/, '').replace(/\s*```$/, '').trim();
+    jsonString = jsonString
+      .replace(/^```[a-z]*\s*/, '')
+      .replace(/\s*```$/, '')
+      .trim();
   } else {
     // パターン3: コードブロックで囲まれていない場合、最初の { から最後の } までを抽出
     const firstBrace = jsonString.indexOf('{');
@@ -217,10 +226,10 @@ function parseAIResponse(content: string, hasAnswer: boolean): OptimizeResponse 
       jsonString = jsonString.substring(firstBrace, lastBrace + 1);
     }
   }
-  
+
   // 前後の不要な文字を除去
   jsonString = jsonString.trim();
-  
+
   // 不完全なJSONを修復する試み
   // 文字列値が閉じられていない場合を検出して修復
   try {
@@ -234,13 +243,13 @@ function parseAIResponse(content: string, hasAnswer: boolean): OptimizeResponse 
     };
 
     const mode = hasAnswer ? 'revise' : 'generate';
-    const optimizedQuestion = parsed.optimizedQuestion || '';
+    const optimizedQuestion = parsed.optimizedQuestion ?? '';
     const optimizedAnswer = parsed.optimizedAnswer;
     const generatedAnswer = parsed.generatedAnswer;
     const shouldSplit = parsed.shouldSplit ?? false;
-    const splitCards: SplitCard[] = (parsed.splitCards || []).map((card) => ({
-      title: card.title || '',
-      content: card.content || '',
+    const splitCards: SplitCard[] = (parsed.splitCards ?? []).map((card) => ({
+      title: card.title ?? '',
+      content: card.content ?? '',
     }));
 
     return {
@@ -253,38 +262,36 @@ function parseAIResponse(content: string, hasAnswer: boolean): OptimizeResponse 
   } catch (parseError) {
     // JSONパースに失敗した場合、より積極的な修復を試みる
     console.warn('Initial JSON parse failed, attempting repair...');
-    
+
     try {
       // 不完全な文字列を修復: 文字列値内の改行や特殊文字を適切にエスケープ
       let repairedJson = jsonString;
-      
+
       // 文字列値内の改行をエスケープ（文字列のコンテキスト内のみ）
       // ダブルクォートで囲まれた文字列内の改行をエスケープ
       let inString = false;
       let escaped = false;
       let result = '';
-      
-      for (let i = 0; i < repairedJson.length; i++) {
-        const char = repairedJson[i];
-        
+
+      for (const char of repairedJson) {
         if (escaped) {
           result += char;
           escaped = false;
           continue;
         }
-        
+
         if (char === '\\') {
           escaped = true;
           result += char;
           continue;
         }
-        
+
         if (char === '"') {
           inString = !inString;
           result += char;
           continue;
         }
-        
+
         if (inString) {
           if (char === '\n') {
             result += '\\n';
@@ -305,33 +312,31 @@ function parseAIResponse(content: string, hasAnswer: boolean): OptimizeResponse 
           result += char;
         }
       }
-      
+
       repairedJson = result;
-      
+
       // JSONが途中で切れている場合、閉じ括弧を追加（文字列外の括弧のみカウント）
       inString = false;
       escaped = false;
       let openBraces = 0;
       let openBrackets = 0;
-      
-      for (let i = 0; i < repairedJson.length; i++) {
-        const char = repairedJson[i];
-        
+
+      for (const char of repairedJson) {
         if (escaped) {
           escaped = false;
           continue;
         }
-        
+
         if (char === '\\') {
           escaped = true;
           continue;
         }
-        
+
         if (char === '"') {
           inString = !inString;
           continue;
         }
-        
+
         if (!inString) {
           if (char === '{') openBraces++;
           if (char === '}') openBraces--;
@@ -339,78 +344,85 @@ function parseAIResponse(content: string, hasAnswer: boolean): OptimizeResponse 
           if (char === ']') openBrackets--;
         }
       }
-      
+
       // 文字列が閉じられていない場合を検出して修復
       // 最後の文字列が閉じられていない場合、閉じクォートを追加
       if (inString) {
         // 文字列が閉じられていない場合、閉じクォートを追加
         repairedJson += '"';
       }
-      
+
       // 不完全なオブジェクトを検出して修復
       // 最後のオブジェクトが不完全な場合（"title"や"content"が不完全）、そのオブジェクトを削除
       const lastOpenBracket = repairedJson.lastIndexOf('[');
       const lastCloseBracket = repairedJson.lastIndexOf(']');
-      
+
       // splitCards配列内の最後のオブジェクトが不完全な場合を検出
       if (lastOpenBracket > lastCloseBracket) {
         // 配列が閉じられていない
         // 最後の不完全なオブジェクトを探して削除（文字列のコンテキストを考慮）
         const splitCardsMatch = repairedJson.match(/"splitCards"\s*:\s*\[([\s\S]*)$/);
-        if (splitCardsMatch) {
-          const cardsContent = splitCardsMatch[1];
+        const cardsContent = splitCardsMatch?.[1];
+        if (cardsContent) {
           // 完全なオブジェクトをカウント（文字列外の}で閉じられているもの）
           const completeObjects: number[] = [];
           let braceCount = 0;
           let inStringForBrace = false;
           let escapedForBrace = false;
-          
-          for (let i = 0; i < cardsContent.length; i++) {
-            const char = cardsContent[i];
-            
+
+          for (const char of cardsContent) {
             if (escapedForBrace) {
               escapedForBrace = false;
               continue;
             }
-            
+
             if (char === '\\') {
               escapedForBrace = true;
               continue;
             }
-            
+
             if (char === '"') {
               inStringForBrace = !inStringForBrace;
               continue;
             }
-            
+
             if (!inStringForBrace) {
               if (char === '{') {
-                if (braceCount === 0) {
-                  // 新しいオブジェクトの開始
-                }
                 braceCount++;
               } else if (char === '}') {
                 braceCount--;
                 if (braceCount === 0) {
                   // 完全なオブジェクトが見つかった
-                  completeObjects.push(i + 1);
+                  const currentIndex = cardsContent.indexOf(
+                    char,
+                    completeObjects.length > 0 ? completeObjects[completeObjects.length - 1] : 0
+                  );
+                  if (currentIndex !== -1) {
+                    completeObjects.push(currentIndex + 1);
+                  }
                 }
               }
             }
           }
-          
+
           // 完全なオブジェクトのみを残す
-          if (completeObjects.length > 0) {
+          if (completeObjects.length > 0 && cardsContent) {
             const lastCompleteIndex = completeObjects[completeObjects.length - 1];
             const cleanedCards = cardsContent.substring(0, lastCompleteIndex);
-            repairedJson = repairedJson.replace(/"splitCards"\s*:\s*\[[\s\S]*$/, `"splitCards": [${cleanedCards}]`);
+            repairedJson = repairedJson.replace(
+              /"splitCards"\s*:\s*\[[\s\S]*$/,
+              `"splitCards": [${cleanedCards}]`
+            );
           } else {
             // 完全なオブジェクトがない場合、splitCardsを空配列にする
-            repairedJson = repairedJson.replace(/"splitCards"\s*:\s*\[[\s\S]*$/, '"splitCards": []');
+            repairedJson = repairedJson.replace(
+              /"splitCards"\s*:\s*\[[\s\S]*$/,
+              '"splitCards": []'
+            );
           }
         }
       }
-      
+
       // 閉じられていない括弧を追加
       while (openBrackets > 0) {
         repairedJson += ']';
@@ -420,7 +432,7 @@ function parseAIResponse(content: string, hasAnswer: boolean): OptimizeResponse 
         repairedJson += '}';
         openBraces--;
       }
-      
+
       // 再度パースを試みる
       const parsed = JSON.parse(repairedJson) as {
         optimizedQuestion?: string;
@@ -431,13 +443,13 @@ function parseAIResponse(content: string, hasAnswer: boolean): OptimizeResponse 
       };
 
       const mode = hasAnswer ? 'revise' : 'generate';
-      const optimizedQuestion = parsed.optimizedQuestion || '';
+      const optimizedQuestion = parsed.optimizedQuestion ?? '';
       const optimizedAnswer = parsed.optimizedAnswer;
       const generatedAnswer = parsed.generatedAnswer;
       const shouldSplit = parsed.shouldSplit ?? false;
-      const splitCards: SplitCard[] = (parsed.splitCards || []).map((card) => ({
-        title: card.title || '',
-        content: card.content || '',
+      const splitCards: SplitCard[] = (parsed.splitCards ?? []).map((card) => ({
+        title: card.title ?? '',
+        content: card.content ?? '',
       }));
 
       return {
@@ -453,7 +465,9 @@ function parseAIResponse(content: string, hasAnswer: boolean): OptimizeResponse 
       console.error('Repair attempt also failed:', repairError);
       console.error('Content preview:', content.substring(0, 1000));
       console.error('JSON string preview:', jsonString.substring(0, 1000));
-      throw new Error(`Failed to parse AI response as JSON: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to parse AI response as JSON: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`
+      );
     }
   }
 }
@@ -476,7 +490,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { question, answer } = optimizeCardSchema.parse(body);
 
-    const hasAnswer = answer && answer.trim().length > 0;
+    const hasAnswer = Boolean(answer && answer.trim().length > 0);
     const prompt = createPrompt(question, answer);
 
     // OpenAI API呼び出し
@@ -488,9 +502,12 @@ export async function POST(request: Request) {
     return Response.json(result);
   } catch (error) {
     console.error('Error optimizing card:', error);
-    
+
     if (error instanceof z.ZodError) {
-      return Response.json({ error: 'Invalid request body', details: error.errors }, { status: 400 });
+      return Response.json(
+        { error: 'Invalid request body', details: error.errors },
+        { status: 400 }
+      );
     }
 
     return Response.json(
@@ -499,4 +516,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
