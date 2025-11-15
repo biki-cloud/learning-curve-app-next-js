@@ -16,6 +16,7 @@ export default function NewCardPage() {
   const [newTag, setNewTag] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingTags, setLoadingTags] = useState(true);
+  const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
     void fetchTags();
@@ -128,7 +129,133 @@ export default function NewCardPage() {
 
       <main className="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">カード作成</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">カード作成</h2>
+            <button
+              type="button"
+              onClick={() => setShowGuide(!showGuide)}
+              className="text-sm text-indigo-600 hover:text-indigo-900 font-medium flex items-center gap-2"
+            >
+              <svg
+                className={`w-5 h-5 transition-transform ${showGuide ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+              {showGuide ? 'ガイドを隠す' : 'カード作成のガイドを見る'}
+            </button>
+          </div>
+
+          {/* ガイドセクション */}
+          {showGuide && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                カード作成のベストプラクティス
+              </h3>
+
+              {/* カードの粒度について */}
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-2">
+                  📏 カードの粒度：1つの概念に1つのカード
+                </h4>
+                <p className="text-sm text-gray-700 mb-3">
+                  1つのカードには、1つの明確な概念や事実だけを含めましょう。複数の概念を1つのカードに詰め込むと、記憶が定着しにくくなります。
+                </p>
+                <div className="bg-white rounded-md p-4 space-y-4">
+                  <div>
+                    <p className="text-xs font-medium text-red-600 mb-2">❌ 悪い例：複数の概念</p>
+                    <div className="text-xs text-gray-600 bg-red-50 p-3 rounded border border-red-200">
+                      <p className="font-medium mb-1">質問：</p>
+                      <p>ReactのHooksについて説明してください</p>
+                      <p className="font-medium mt-2 mb-1">回答：</p>
+                      <p>
+                        useStateは状態管理、useEffectは副作用処理、useContextはコンテキスト取得、useMemoはメモ化...
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-green-600 mb-2">✅ 良い例：1つの概念</p>
+                    <div className="text-xs text-gray-600 bg-green-50 p-3 rounded border border-green-200">
+                      <p className="font-medium mb-1">質問：</p>
+                      <p>ReactのuseStateは何？</p>
+                      <p className="font-medium mt-2 mb-1">回答：</p>
+                      <p>
+                        関数コンポーネントで状態を管理するためのHook。配列の分割代入で現在の値と更新関数を取得する。
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 良いカードの例 */}
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-3">
+                  💡 良いカードの例
+                </h4>
+                <div className="space-y-3">
+                  <div className="bg-white rounded-md p-4 border border-gray-200">
+                    <p className="text-xs font-medium text-gray-700 mb-2">プログラミング</p>
+                    <p className="text-xs text-gray-600 mb-1">
+                      <span className="font-medium">質問：</span> JavaScriptのクロージャとは？
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      <span className="font-medium">回答：</span> 関数とその関数が定義されたスコープの変数を束縛したもの。内側の関数が外側の変数にアクセスできる。
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-md p-4 border border-gray-200">
+                    <p className="text-xs font-medium text-gray-700 mb-2">言語学習</p>
+                    <p className="text-xs text-gray-600 mb-1">
+                      <span className="font-medium">質問：</span> 「ありがとう」を英語で？
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      <span className="font-medium">回答：</span> Thank you / Thanks
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-md p-4 border border-gray-200">
+                    <p className="text-xs font-medium text-gray-700 mb-2">一般知識</p>
+                    <p className="text-xs text-gray-600 mb-1">
+                      <span className="font-medium">質問：</span> 光合成の化学反応式は？
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      <span className="font-medium">回答：</span> 6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 質問の書き方 */}
+              <div className="mb-6">
+                <h4 className="font-medium text-gray-900 mb-2">
+                  ✍️ 質問の書き方
+                </h4>
+                <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+                  <li>明確で具体的な質問にする</li>
+                  <li>「〜とは？」「〜は何？」「〜の違いは？」など、答えやすい形式にする</li>
+                  <li>文脈がなくても理解できるようにする</li>
+                </ul>
+              </div>
+
+              {/* 回答の書き方 */}
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-900 mb-2">
+                  📝 回答の書き方
+                </h4>
+                <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+                  <li>簡潔に、要点を押さえる（長すぎると覚えにくい）</li>
+                  <li>Markdownを使って構造化する（コードブロック、リストなど）</li>
+                  <li>具体例を含めると記憶に残りやすい</li>
+                  <li>自分が後で見返したときに理解できるように書く</li>
+                </ul>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6">
             <div className="mb-4">
