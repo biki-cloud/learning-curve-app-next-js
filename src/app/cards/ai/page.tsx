@@ -113,18 +113,18 @@ export default function AICardPage() {
       });
 
       if (!response.ok) {
-        const error = (await response.json()) as { error?: string };
+        const error: { error?: string } = await response.json();
         throw new Error(error.error ?? 'AI生成に失敗しました');
       }
 
-      const result = (await response.json()) as {
+      const result: {
         mode: 'revise' | 'generate';
         optimizedQuestion: string;
         optimizedAnswer?: string;
         generatedAnswer?: string;
         shouldSplit: boolean;
         splitCards: Array<{ title: string; content: string }>;
-      };
+      } = await response.json();
 
       setAiResult(result);
 
@@ -153,7 +153,7 @@ export default function AICardPage() {
   };
 
   const handleSelectAll = () => {
-    if (!aiResult || !aiResult.splitCards) return;
+    if (!aiResult?.splitCards) return;
     if (selectedCards.size === aiResult.splitCards.length) {
       setSelectedCards(new Set());
     } else {
@@ -162,7 +162,7 @@ export default function AICardPage() {
   };
 
   const handleSaveSelectedCards = async () => {
-    if (!aiResult || !aiResult.splitCards || selectedCards.size === 0) {
+    if (!aiResult?.splitCards || selectedCards.size === 0) {
       return;
     }
 
@@ -181,7 +181,8 @@ export default function AICardPage() {
       // 選択されたカードを順番に保存
       const cardsToSave = Array.from(selectedCards)
         .sort((a, b) => a - b)
-        .map((index) => aiResult!.splitCards[index]);
+        .map((index) => aiResult.splitCards[index])
+        .filter((card): card is { title: string; content: string } => card !== undefined);
 
       let successCount = 0;
       let errorCount = 0;
@@ -382,7 +383,7 @@ export default function AICardPage() {
                   </h4>
                   <div className="text-sm text-gray-700 prose prose-sm max-w-none">
                     <MarkdownRenderer
-                      content={aiResult.optimizedAnswer || aiResult.generatedAnswer || ''}
+                      content={aiResult.optimizedAnswer ?? aiResult.generatedAnswer ?? ''}
                     />
                   </div>
                   <p className="mt-3 text-xs text-gray-500">
