@@ -195,6 +195,12 @@ export default function CardsPage() {
             </div>
             <div className="flex items-center space-x-4">
               <Link
+                href="/cards/ai"
+                className="text-purple-600 hover:text-purple-900 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                AI自動作成
+              </Link>
+              <Link
                 href="/cards/new"
                 className="text-indigo-600 hover:text-indigo-900 px-3 py-2 rounded-md text-sm font-medium"
               >

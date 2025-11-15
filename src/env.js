@@ -13,6 +13,7 @@ export const env = createEnv({
     DB_REMOTE_DATABASE_ID: z.string().optional(),
     DB_LOCAL_PATH: z.string().optional(),
     NODE_ENV: z.enum(['development', 'production']).default('development'),
+    OPENAI_API_KEY: z.string().optional(),
   },
 
   /**
@@ -35,6 +36,7 @@ export const env = createEnv({
     DB_REMOTE_DATABASE_ID: process.env.DB_REMOTE_DATABASE_ID,
     DB_LOCAL_PATH: process.env.DB_LOCAL_PATH,
     NODE_ENV: process.env.NODE_ENV,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },

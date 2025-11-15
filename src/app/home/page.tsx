@@ -174,6 +174,12 @@ export default function HomePage() {
               レビュー開始
             </Link>
             <Link
+              href="/cards/ai"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+            >
+              AI自動作成
+            </Link>
+            <Link
               href="/cards/new"
               className="inline-flex items-center px-4 py-2 border border-gray-300 text-base font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50"
             >
