@@ -1,5 +1,5 @@
 # Your wrangler.toml file should look something like this:
-name = "lerning-curve-app"
+name = "learning-curve-app"
 compatibility_date = "2024-11-11"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
@@ -10,7 +10,7 @@ pages_build_output_dir = ".vercel/output/static"
 
 [[d1_databases]]
 binding = "DB" # i.e. available in your Worker on env.DB
-database_name = "lerning-curve-app" # When you create your D1 DB, you choose the name
+database_name = "learning-curve-app" # When you create your D1 DB, you choose the name
 # For Local: Placeholder for local development. like "local". [Warning] -> Empty is occur error.
 # For Production: use actual database_id for production
 database_id = "xxxxxxx" 

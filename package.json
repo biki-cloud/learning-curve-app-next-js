@@ -15,7 +15,7 @@
     "dev": "pnpm setup:dev && next dev",
     "pages:build": "pnpm next-on-pages",
     "pages:dev": "pnpm setup:dev && pnpm pages:build && pnpm wrangler pages dev --port=3000",
-    "pages:deploy": "pnpm setup:prod && pnpm pages:build && pnpm wrangler pages deploy"
+    "pages:deploy": "pnpm setup:prod && pnpm pages:build && pnpm wrangler pages deploy --no-bundle"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.81.1",
@@ -52,7 +52,7 @@
     "prettier-plugin-tailwindcss": "^0.6.9",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2",
-    "wrangler": "^3.99.0"
+    "wrangler": "^4.47.0"
   },
   "packageManager": "pnpm@9.15.1"
 }
