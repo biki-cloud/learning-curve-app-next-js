@@ -30,7 +30,19 @@ pnpm install
 ```env
 NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
+OPENAI_API_KEY="your-openai-api-key"
 ```
+
+**重要**: Cloudflare
+Pagesにデプロイする場合、機密情報（`OPENAI_API_KEY`など）は`.env.production`だけでは設定されません。以下のコマンドでCloudflare
+Pagesのシークレットとして設定してください：
+
+```bash
+# 本番環境のシークレットを設定
+pnpm wrangler pages secret put OPENAI_API_KEY --project-name=learning-curve-app
+```
+
+プロンプトが表示されたら、APIキーを入力してください。
 
 ### 4. Cloudflare D1 データベースの作成
 
@@ -58,6 +70,7 @@ pnpm db:migrate:prod
 Supabase ダッシュボードで以下を設定：
 
 1. Authentication > URL Configuration
+
    - Redirect URLs に `http://localhost:3000/auth/callback` を追加（開発環境）
    - 本番環境の URL も追加
 
