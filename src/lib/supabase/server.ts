@@ -23,7 +23,7 @@ export async function getAuthUser(request?: Request) {
 
   // Authorization ヘッダーからトークンを取得
   const authHeader = request.headers.get('authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader?.startsWith('Bearer ')) {
     return null;
   }
 

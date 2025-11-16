@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "db:generate": "drizzle-kit generate",
-    "db:migrate:dev": "pnpm setup:dev && wrangler d1 migrations apply lerning-curve-app --local",
+    "db:migrate:dev": "pnpm setup:dev && wrangler d1 migrations apply learning-curve-app --local",
     "db:migrate:prod": "pnpm setup:prod && wrangler d1 migrations apply learning-curve-app --remote",
     "db:studio:dev": "pnpm setup:dev && cross-env DB_LOCAL_PATH=$(find .wrangler/state/v3/d1/miniflare-D1DatabaseObject -type f -name '*.sqlite' -print -quit) drizzle-kit studio --port 3094",
     "db:studio:prod": "pnpm setup:prod && drizzle-kit studio --port 3098",
@@ -30,8 +30,8 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.13.7",
-    "@cloudflare/workers-types": "^4.20241224.0",
+    "@cloudflare/next-on-pages": "^1.13.16",
+    "@cloudflare/workers-types": "^4.20251115.0",
     "@t3-oss/env-nextjs": "^0.11.1",
     "@types/better-sqlite3": "^7.6.12",
     "@types/eslint": "^8.56.2",
