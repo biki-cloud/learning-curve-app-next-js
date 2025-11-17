@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Navbar from '@/components/navbar';
 
 interface DashboardData {
   today_review_count: number;
@@ -63,129 +64,140 @@ export default function HomePage() {
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">読み込み中...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+          <div className="mt-4 text-sm text-muted-foreground">読み込み中...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">LearnCurve</h1>
+    <div className="min-h-screen bg-background">
+      <Navbar currentPath="/home" />
+      <main className="container mx-auto py-8 px-4">
+        {/* ウェルカムメッセージ */}
+        <div className="mb-10">
+          <h1 className="text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            ダッシュボード
+          </h1>
+          <p className="text-muted-foreground text-lg">今日も学習を続けましょう ✨</p>
+        </div>
+
+        {/* 統計カード */}
+        <div className="grid gap-6 md:grid-cols-3 mb-10">
+          <div className="group relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-blue-500/10">
+                    <span className="text-2xl">📚</span>
+                  </div>
+                  <p className="text-sm font-medium text-muted-foreground">今日のレビュー</p>
+                </div>
+              </div>
+              <p className="text-4xl font-bold mb-1">
+                {dashboardData?.today_review_count ?? 0}
+              </p>
+              <p className="text-sm text-muted-foreground">枚</p>
             </div>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/cards"
-                className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                カード一覧
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                ログアウト
-              </button>
+          </div>
+
+          <div className="group relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-purple-500/10">
+                    <span className="text-2xl">🗂️</span>
+                  </div>
+                  <p className="text-sm font-medium text-muted-foreground">全カード数</p>
+                </div>
+              </div>
+              <p className="text-4xl font-bold mb-1">
+                {dashboardData?.total_cards ?? 0}
+              </p>
+              <p className="text-sm text-muted-foreground">枚</p>
+            </div>
+          </div>
+
+          <div className="group relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="relative p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-orange-500/10">
+                    <span className="text-2xl">🔥</span>
+                  </div>
+                  <p className="text-sm font-medium text-muted-foreground">ストリーク</p>
+                </div>
+              </div>
+              <p className="text-4xl font-bold mb-1">
+                {dashboardData?.streak ?? 0}
+              </p>
+              <p className="text-sm text-muted-foreground">日連続</p>
             </div>
           </div>
         </div>
-      </nav>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="text-2xl">📚</div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        今日のレビュー
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {dashboardData?.today_review_count ?? 0} 枚
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="text-2xl">🗂️</div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        全カード数
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {dashboardData?.total_cards ?? 0} 枚
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="text-2xl">🔥</div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        ストリーク
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900">
-                        {dashboardData?.streak ?? 0} 日
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex space-x-4">
+        {/* アクションボタン */}
+        <div className="mb-10">
+          <h3 className="text-xl font-semibold mb-6">クイックアクション</h3>
+          <div className="grid gap-4 md:grid-cols-3">
             <Link
               href="/review"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+              className="group relative overflow-hidden rounded-xl border bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-sm transition-all hover:shadow-lg hover:scale-[1.02]"
             >
-              レビュー開始
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative p-8">
+                <div className="text-4xl mb-4">🎯</div>
+                <div className="font-bold text-lg mb-2">レビュー開始</div>
+                <div className="text-sm opacity-90">今日の復習を始める</div>
+                <div className="mt-4 text-xs opacity-75">→ 今すぐ始める</div>
+              </div>
             </Link>
+
             <Link
               href="/cards/ai"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+              className="group relative overflow-hidden rounded-xl border bg-gradient-to-br from-secondary to-secondary/80 text-secondary-foreground shadow-sm transition-all hover:shadow-lg hover:scale-[1.02]"
             >
-              AI自動作成
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative p-8">
+                <div className="text-4xl mb-4">✨</div>
+                <div className="font-bold text-lg mb-2">AI自動作成</div>
+                <div className="text-sm opacity-90">AIでカードを生成</div>
+                <div className="mt-4 text-xs opacity-75">→ AIに任せる</div>
+              </div>
             </Link>
+
             <Link
               href="/cards/new"
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-base font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50"
+              className="group relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-lg hover:scale-[1.02] hover:border-primary/20"
             >
-              カード作成
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative p-8">
+                <div className="text-4xl mb-4">➕</div>
+                <div className="font-bold text-lg mb-2">カード作成</div>
+                <div className="text-sm text-muted-foreground">新しいカードを追加</div>
+                <div className="mt-4 text-xs text-muted-foreground">→ 手動で作成</div>
+              </div>
             </Link>
           </div>
+        </div>
+
+        {/* カード一覧へのリンク */}
+        <div className="text-center">
+          <Link
+            href="/cards"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-input bg-background px-6 py-3 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-sm"
+          >
+            <span className="text-lg">📋</span>
+            <span>カード一覧を見る</span>
+          </Link>
         </div>
       </main>
     </div>

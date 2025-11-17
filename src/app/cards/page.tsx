@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import Navbar from '@/components/navbar';
 
 interface Card {
   id: number;
@@ -44,7 +45,7 @@ export default function CardsPage() {
     if (!loading) {
       void fetchCards();
     }
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, selectedTag, reviewStatus]);
 
   const checkAuth = async () => {
@@ -177,148 +178,146 @@ export default function CardsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">読み込み中...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+          <div className="mt-4 text-sm text-muted-foreground">読み込み中...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/home" className="text-xl font-bold text-gray-900">
-                LearnCurve
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/cards/ai"
-                className="text-purple-600 hover:text-purple-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                AI自動作成
-              </Link>
-              <Link
-                href="/cards/new"
-                className="text-indigo-600 hover:text-indigo-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                新規作成
-              </Link>
-            </div>
+    <div className="min-h-screen bg-background">
+      <Navbar currentPath="/cards" />
+      <main className="container mx-auto py-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">カード一覧</h2>
+            <p className="text-sm text-muted-foreground mt-1">{cards.length} 枚のカード</p>
+          </div>
+          <div className="flex gap-2">
+            <Link
+              href="/cards/ai"
+              className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              ✨ AI自動作成
+            </Link>
+            <Link
+              href="/cards/new"
+              className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/90"
+            >
+              ➕ 新規作成
+            </Link>
           </div>
         </div>
-      </nav>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">カード一覧</h2>
-
-          {/* フィルターUI */}
-          <div className="bg-white shadow rounded-lg p-4 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* 検索バー */}
-              <div>
-                <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-                  検索
-                </label>
-                <input
-                  id="search"
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="質問・回答を検索..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-
-              {/* タグフィルター */}
-              <div>
-                <label htmlFor="tag" className="block text-sm font-medium text-gray-700 mb-1">
-                  タグ
-                </label>
-                <select
-                  id="tag"
-                  value={selectedTag}
-                  onChange={(e) => setSelectedTag(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="">すべてのタグ</option>
-                  {availableTags.map((tag) => (
-                    <option key={tag} value={tag}>
-                      {tag}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* レビュー状態フィルター */}
-              <div>
-                <label htmlFor="reviewStatus" className="block text-sm font-medium text-gray-700 mb-1">
-                  レビュー状態
-                </label>
-                <select
-                  id="reviewStatus"
-                  value={reviewStatus}
-                  onChange={(e) => setReviewStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="all">すべて</option>
-                  <option value="unreviewed">未レビュー</option>
-                  <option value="reviewed">レビュー済み</option>
-                  <option value="due">今日レビュー対象</option>
-                </select>
-              </div>
+        {/* フィルターUI */}
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* 検索バー */}
+            <div>
+              <label htmlFor="search" className="block text-sm font-medium mb-2">
+                検索
+              </label>
+              <input
+                id="search"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="質問・回答を検索..."
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
             </div>
 
-            {/* フィルターリセットボタン */}
-            {(searchQuery || selectedTag || reviewStatus !== 'all') && (
-              <div className="mt-4">
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedTag('');
-                    setReviewStatus('all');
-                  }}
-                  className="text-sm text-indigo-600 hover:text-indigo-900 font-medium"
-                >
-                  フィルターをリセット
-                </button>
-              </div>
-            )}
+            {/* タグフィルター */}
+            <div>
+              <label htmlFor="tag" className="block text-sm font-medium mb-2">
+                タグ
+              </label>
+              <select
+                id="tag"
+                value={selectedTag}
+                onChange={(e) => setSelectedTag(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">すべてのタグ</option>
+                {availableTags.map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* レビュー状態フィルター */}
+            <div>
+              <label htmlFor="reviewStatus" className="block text-sm font-medium mb-2">
+                レビュー状態
+              </label>
+              <select
+                id="reviewStatus"
+                value={reviewStatus}
+                onChange={(e) => setReviewStatus(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="all">すべて</option>
+                <option value="unreviewed">未レビュー</option>
+                <option value="reviewed">レビュー済み</option>
+                <option value="due">今日レビュー対象</option>
+              </select>
+            </div>
           </div>
 
-          {cards.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 mb-4">カードがありません</p>
-              <Link
-                href="/cards/new"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+          {/* フィルターリセットボタン */}
+          {(searchQuery || selectedTag || reviewStatus !== 'all') && (
+            <div className="mt-4 pt-4 border-t">
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedTag('');
+                  setReviewStatus('all');
+                }}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                カードを作成
-              </Link>
+                フィルターをリセット
+              </button>
             </div>
-          ) : (
-            <div className="grid gap-4">
-              {cards.map((card) => {
-                const isExpanded = expandedCards.has(card.id);
-                return (
-                  <div
-                    key={card.id}
-                    className="bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow"
-                  >
+          )}
+        </div>
+
+        {cards.length === 0 ? (
+          <div className="text-center py-16 rounded-lg border bg-card text-card-foreground shadow-sm">
+            <div className="text-6xl mb-4">📝</div>
+            <p className="text-lg mb-6">カードがありません</p>
+            <Link
+              href="/cards/new"
+              className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/90"
+            >
+              ➕ カードを作成
+            </Link>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {cards.map((card) => {
+              const isExpanded = expandedCards.has(card.id);
+              return (
+                <div
+                  key={card.id}
+                  className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="p-6">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <div className="text-lg font-medium text-gray-900 mb-2">
+                        <div className="text-lg font-semibold mb-3 leading-relaxed">
                           <MarkdownRenderer content={card.question} />
                         </div>
                         {card.tags && (
-                          <div className="flex flex-wrap gap-2 mb-3">
+                          <div className="flex flex-wrap gap-2 mb-4">
                             {card.tags.split(',').map((tag, idx) => (
                               <span
                                 key={idx}
-                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                                className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors bg-secondary text-secondary-foreground"
                               >
                                 {tag.trim()}
                               </span>
@@ -326,48 +325,51 @@ export default function CardsPage() {
                           </div>
                         )}
                         {isExpanded && (
-                          <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
-                            <MarkdownRenderer content={card.answer} />
+                          <div className="mt-4 p-4 rounded-md border bg-muted">
+                            <div className="text-sm font-medium text-muted-foreground mb-2">答え</div>
+                            <div className="leading-relaxed">
+                              <MarkdownRenderer content={card.answer} />
+                            </div>
                           </div>
                         )}
-                        <div className="mt-3 space-y-2">
+                        <div className="mt-4 space-y-2">
                           <div className="flex items-center justify-between">
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-muted-foreground">
                               作成日: {new Date(card.created_at).toLocaleDateString('ja-JP')}
                             </p>
                             <button
                               onClick={() => toggleCard(card.id)}
-                              className="text-sm text-indigo-600 hover:text-indigo-900 font-medium"
+                              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                             >
                               {isExpanded ? '回答を隠す' : '回答を表示'}
                             </button>
                           </div>
                           {card.ease !== null && (
-                            <div className="flex flex-wrap gap-4 text-sm">
+                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
-                                <span className="text-gray-500">習熟度:</span>
-                                <span className="font-medium text-indigo-600">
+                                <span>習熟度:</span>
+                                <span className="font-medium text-foreground">
                                   {card.ease.toFixed(2)}
                                 </span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <span className="text-gray-500">レビュー回数:</span>
-                                <span className="font-medium text-indigo-600">
+                                <span>レビュー回数:</span>
+                                <span className="font-medium text-foreground">
                                   {card.rep_count ?? 0}回
                                 </span>
                               </div>
                               {card.interval_days !== null && (
                                 <div className="flex items-center gap-1">
-                                  <span className="text-gray-500">次回まで:</span>
-                                  <span className="font-medium text-indigo-600">
+                                  <span>次回まで:</span>
+                                  <span className="font-medium text-foreground">
                                     {card.interval_days}日
                                   </span>
                                 </div>
                               )}
                               {card.next_review_at !== null && (
                                 <div className="flex items-center gap-1">
-                                  <span className="text-gray-500">次回レビュー:</span>
-                                  <span className="font-medium text-indigo-600">
+                                  <span>次回レビュー:</span>
+                                  <span className="font-medium text-foreground">
                                     {new Date(card.next_review_at).toLocaleDateString('ja-JP')}
                                   </span>
                                 </div>
@@ -376,27 +378,27 @@ export default function CardsPage() {
                           )}
                         </div>
                       </div>
-                      <div className="flex space-x-2 ml-4">
+                      <div className="flex gap-2 ml-4">
                         <Link
                           href={`/cards/${card.id}/edit`}
-                          className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
                         >
                           編集
                         </Link>
                         <button
                           onClick={() => handleDelete(card.id)}
-                          className="text-red-600 hover:text-red-900 text-sm font-medium"
+                          className="inline-flex items-center justify-center rounded-md border border-destructive/50 bg-background px-3 py-1.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
                         >
                           削除
                         </button>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </main>
     </div>
   );

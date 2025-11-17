@@ -4,8 +4,10 @@
 import { db } from '@/server/db';
 import { cardsTable, cardStatesTable, reviewsTable } from '@/server/db/schema';
 import { getAuthUser } from '@/lib/supabase/server';
+import { generateEmbedding, serializeEmbedding } from '@/lib/embeddings';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
+import { env } from '@/env';
 
 export const runtime = 'edge';
 
@@ -13,6 +15,8 @@ const updateCardSchema = z.object({
   question: z.string().min(1).optional(),
   answer: z.string().min(1).optional(),
   tags: z.string().optional(),
+  category: z.string().optional(),
+  difficulty: z.number().int().min(1).max(5).optional(),
 });
 
 // PUT /api/cards/[id] - カード編集
@@ -46,10 +50,35 @@ export async function PUT(
       return Response.json({ error: 'Card not found' }, { status: 404 });
     }
 
+    // questionまたはanswerが更新された場合はembeddingを再生成
+    const shouldRegenerateEmbedding =
+      (updateData.question !== undefined || updateData.answer !== undefined) &&
+      env.OPENAI_API_KEY;
+
+    let embedding: string | undefined;
+    if (shouldRegenerateEmbedding) {
+      try {
+        const question = updateData.question ?? card.question;
+        const answer = updateData.answer ?? card.answer;
+        const textForEmbedding = `${question}\n${answer}`;
+        const embeddingVector = await generateEmbedding(textForEmbedding);
+        embedding = serializeEmbedding(embeddingVector);
+      } catch (error) {
+        console.error('Error regenerating embedding:', error);
+        // embedding生成に失敗しても更新は続行
+      }
+    }
+
     // カードを更新
+    const finalUpdateData = {
+      ...updateData,
+      ...(embedding !== undefined ? { embedding } : {}),
+      updated_at: Date.now(),
+    };
+
     await db
       .update(cardsTable)
-      .set(updateData)
+      .set(finalUpdateData)
       .where(eq(cardsTable.id, cardId));
 
     return Response.json({ ok: true });
@@ -68,7 +97,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getAuthUser();
+    const user = await getAuthUser(request);
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
