@@ -25,6 +25,10 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const currentCardId = url.searchParams.get('currentCardId'); // 現在解いたカードID（オプション）
     const limit = parseInt(url.searchParams.get('limit') ?? '1', 10); // 取得するカード数（デフォルト1）
+    const excludeIdsParam = url.searchParams.get('excludeIds'); // 除外するカードIDリスト（カンマ区切り）
+    const excludeIds = excludeIdsParam
+      ? excludeIdsParam.split(',').map((id) => parseInt(id, 10)).filter((id) => !isNaN(id))
+      : [];
 
     // 日本時間の「今日」の終了時刻を使用
     const todayEndJST = getTodayEndJST();
@@ -98,8 +102,24 @@ export async function GET(request: Request) {
       )
       .limit(MAX_NEW_PER_DAY);
 
-    // 3. 今日の対象集合を作成
-    const todayPool = [...reviewCards, ...newCards];
+    // 3. 今日の対象集合を作成（重複を除去）
+    const cardMap = new Map<number, typeof reviewCards[0]>();
+    
+    // reviewCardsを追加
+    for (const card of reviewCards) {
+      if (!excludeIds.includes(card.id)) {
+        cardMap.set(card.id, card);
+      }
+    }
+    
+    // newCardsを追加（重複チェック）
+    for (const card of newCards) {
+      if (!excludeIds.includes(card.id) && !cardMap.has(card.id)) {
+        cardMap.set(card.id, card);
+      }
+    }
+    
+    const todayPool = Array.from(cardMap.values());
 
     // 4. 現在解いたカードの情報を取得（類似度計算用）
     let currentCard: CurrentCard | null = null;

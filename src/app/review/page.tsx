@@ -103,8 +103,23 @@ export default function ReviewPage() {
       if (response.ok) {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
         const data = await response.json() as ReviewCard[];
-        setCards(data);
-        if (data.length === 0) {
+        
+        // 重複チェック（念のため）
+        const uniqueData: ReviewCard[] = [];
+        const seenIds = new Set<number>();
+        for (const card of data) {
+          if (card.card_id && !seenIds.has(card.card_id)) {
+            seenIds.add(card.card_id);
+            uniqueData.push(card);
+          }
+        }
+        
+        if (uniqueData.length !== data.length) {
+          console.warn(`Removed ${data.length - uniqueData.length} duplicate cards from initial load`);
+        }
+        
+        setCards(uniqueData);
+        if (uniqueData.length === 0) {
           setIsNoCardsAtStart(true);
           setShowLimitSelector(false);
           setLoading(false);
@@ -135,11 +150,20 @@ export default function ReviewPage() {
         return null;
       }
 
-      const url = currentCardId
-        ? `/api/review/today?limit=1&currentCardId=${currentCardId}`
-        : '/api/review/today?limit=1';
+      // 既にレビューしたカードIDを取得
+      const reviewedIds = cards.map((card) => card.card_id).filter((id) => id !== undefined);
+      
+      // URLパラメータを構築
+      const params = new URLSearchParams();
+      params.append('limit', '1');
+      if (currentCardId) {
+        params.append('currentCardId', currentCardId.toString());
+      }
+      if (reviewedIds.length > 0) {
+        params.append('excludeIds', reviewedIds.join(','));
+      }
 
-      const response = await fetch(url, {
+      const response = await fetch(`/api/review/today?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -149,6 +173,22 @@ export default function ReviewPage() {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
         const data = await response.json() as ReviewCard[];
         if (data.length > 0) {
+          // 重複チェック（念のため）
+          const newCardIds = new Set(data.map((card) => card.card_id));
+          const existingCardIds = new Set(cards.map((card) => card.card_id));
+          const duplicates = data.filter((card) => existingCardIds.has(card.card_id));
+          
+          if (duplicates.length > 0) {
+            console.warn('Duplicate cards detected:', duplicates.map((c) => c.card_id));
+            // 重複を除外
+            const uniqueData = data.filter((card) => !existingCardIds.has(card.card_id));
+            if (uniqueData.length > 0) {
+              setCards((prev) => [...prev, ...uniqueData]);
+              return uniqueData;
+            }
+            return null;
+          }
+          
           setCards((prev) => [...prev, ...data]);
           return data;
         }
