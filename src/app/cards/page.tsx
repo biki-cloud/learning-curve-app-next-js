@@ -45,7 +45,7 @@ export default function CardsPage() {
     if (!loading) {
       void fetchCards();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
   }, [searchQuery, selectedTag, reviewStatus]);
 
   const checkAuth = async () => {

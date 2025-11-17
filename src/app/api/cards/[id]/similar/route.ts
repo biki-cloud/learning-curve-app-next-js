@@ -1,7 +1,7 @@
 // GET /api/cards/[id]/similar - 類似カード検索
 
 import { db } from '@/server/db';
-import { cardsTable, cardStatesTable } from '@/server/db/schema';
+import { cardsTable } from '@/server/db/schema';
 import { getAuthUser } from '@/lib/supabase/server';
 import { eq, and, isNotNull, ne } from 'drizzle-orm';
 import { cosineSimilarity, parseEmbedding } from '@/lib/embeddings';

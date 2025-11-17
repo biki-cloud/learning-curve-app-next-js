@@ -29,9 +29,9 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     throw new Error(`OpenAI Embeddings API error: ${response.status} ${error}`);
   }
 
-  const data = (await response.json()) as {
+  const data: {
     data?: Array<{ embedding?: number[] }>;
-  };
+  } = await response.json();
 
   const embedding = data.data?.[0]?.embedding;
   if (!embedding) {

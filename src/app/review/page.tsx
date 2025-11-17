@@ -2,7 +2,7 @@
 
 // レビュー画面（核心UI）
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -31,7 +31,6 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showLimitSelector, setShowLimitSelector] = useState(true);
-  const [selectedLimit, setSelectedLimit] = useState<number | null>(null);
   const [cardTransition, setCardTransition] = useState(false);
   const [showKeyboardHints, setShowKeyboardHints] = useState(true);
   const [isNoCardsAtStart, setIsNoCardsAtStart] = useState(false);
@@ -39,6 +38,136 @@ export default function ReviewPage() {
   useEffect(() => {
     void checkAuth();
   }, []);
+
+  const fetchNextCard = useCallback(
+    async (currentCardId?: number): Promise<ReviewCard[] | null> => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session) {
+          return null;
+        }
+
+        // 既にレビューしたカードIDを取得
+        const reviewedIds = cards.map((card) => card.card_id).filter((id) => id !== undefined);
+
+        // URLパラメータを構築
+        const params = new URLSearchParams();
+        params.append('limit', '1');
+        if (currentCardId) {
+          params.append('currentCardId', currentCardId.toString());
+        }
+        if (reviewedIds.length > 0) {
+          params.append('excludeIds', reviewedIds.join(','));
+        }
+
+        const response = await fetch(`/api/review/today?${params.toString()}`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data: ReviewCard[] = await response.json();
+          if (data.length > 0) {
+            // 重複チェック（念のため）
+            const existingCardIds = new Set(cards.map((card) => card.card_id));
+            const duplicates = data.filter((card) => existingCardIds.has(card.card_id));
+
+            if (duplicates.length > 0) {
+              console.warn(
+                'Duplicate cards detected:',
+                duplicates.map((c) => c.card_id)
+              );
+              // 重複を除外
+              const uniqueData = data.filter((card) => !existingCardIds.has(card.card_id));
+              if (uniqueData.length > 0) {
+                setCards((prev) => [...prev, ...uniqueData]);
+                return uniqueData;
+              }
+              return null;
+            }
+
+            setCards((prev) => [...prev, ...data]);
+            return data;
+          }
+        }
+        return null;
+      } catch (error) {
+        console.error('Error fetching next card:', error);
+        return null;
+      }
+    },
+    [cards]
+  );
+
+  const handleRating = useCallback(
+    async (rating: Rating) => {
+      if (!cards[currentIndex]) return;
+
+      setSubmitting(true);
+      setCardTransition(true);
+
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session) {
+          router.push('/login');
+          return;
+        }
+
+        const response = await fetch('/api/review/submit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            card_id: cards[currentIndex].card_id,
+            rating,
+          }),
+        });
+
+        if (response.ok) {
+          // アニメーションのための短い遅延
+          await new Promise((resolve) => setTimeout(resolve, 300));
+
+          // 次のカードへ
+          if (currentIndex < cards.length - 1) {
+            setCurrentIndex(currentIndex + 1);
+            setShowAnswer(false);
+          } else {
+            // 現在のカードを完了したので、次のカードを取得
+            const currentCardId = cards[currentIndex]?.card_id;
+            setShowAnswer(false);
+            // 次のカードを取得（取得後にcurrentIndexを更新）
+            const nextCards = await fetchNextCard(currentCardId);
+            if (nextCards && nextCards.length > 0) {
+              setCurrentIndex(cards.length); // 新しいカードのインデックス
+            } else {
+              // これ以上カードがない
+              setCards([]);
+            }
+          }
+          setCardTransition(false);
+        } else {
+          alert('評価の送信に失敗しました');
+          setCardTransition(false);
+        }
+      } catch (error) {
+        console.error('Error submitting review:', error);
+        alert('エラーが発生しました');
+        setCardTransition(false);
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [cards, currentIndex, router, fetchNextCard]
+  );
 
   // キーボードショートカット
   useEffect(() => {
@@ -66,8 +195,16 @@ export default function ReviewPage() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showAnswer, submitting, showLimitSelector, loading, cards.length, currentIndex]);
+  }, [
+    showAnswer,
+    submitting,
+    showLimitSelector,
+    loading,
+    cards.length,
+    currentIndex,
+    cards,
+    handleRating,
+  ]);
 
   const checkAuth = async () => {
     const {
@@ -101,8 +238,7 @@ export default function ReviewPage() {
         },
       });
       if (response.ok) {
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-        const data = (await response.json()) as ReviewCard[];
+        const data: ReviewCard[] = await response.json();
 
         // 重複チェック（念のため）
         const uniqueData: ReviewCard[] = [];
@@ -138,134 +274,7 @@ export default function ReviewPage() {
   };
 
   const handleStartReview = (limit: number) => {
-    setSelectedLimit(limit);
     void fetchReviewCards(limit);
-  };
-
-  const fetchNextCard = async (currentCardId?: number): Promise<ReviewCard[] | null> => {
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        return null;
-      }
-
-      // 既にレビューしたカードIDを取得
-      const reviewedIds = cards.map((card) => card.card_id).filter((id) => id !== undefined);
-
-      // URLパラメータを構築
-      const params = new URLSearchParams();
-      params.append('limit', '1');
-      if (currentCardId) {
-        params.append('currentCardId', currentCardId.toString());
-      }
-      if (reviewedIds.length > 0) {
-        params.append('excludeIds', reviewedIds.join(','));
-      }
-
-      const response = await fetch(`/api/review/today?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (response.ok) {
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-        const data = (await response.json()) as ReviewCard[];
-        if (data.length > 0) {
-          // 重複チェック（念のため）
-          const newCardIds = new Set(data.map((card) => card.card_id));
-          const existingCardIds = new Set(cards.map((card) => card.card_id));
-          const duplicates = data.filter((card) => existingCardIds.has(card.card_id));
-
-          if (duplicates.length > 0) {
-            console.warn(
-              'Duplicate cards detected:',
-              duplicates.map((c) => c.card_id)
-            );
-            // 重複を除外
-            const uniqueData = data.filter((card) => !existingCardIds.has(card.card_id));
-            if (uniqueData.length > 0) {
-              setCards((prev) => [...prev, ...uniqueData]);
-              return uniqueData;
-            }
-            return null;
-          }
-
-          setCards((prev) => [...prev, ...data]);
-          return data;
-        }
-      }
-      return null;
-    } catch (error) {
-      console.error('Error fetching next card:', error);
-      return null;
-    }
-  };
-
-  const handleRating = async (rating: Rating) => {
-    if (!cards[currentIndex]) return;
-
-    setSubmitting(true);
-    setCardTransition(true);
-
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        router.push('/login');
-        return;
-      }
-
-      const response = await fetch('/api/review/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          card_id: cards[currentIndex].card_id,
-          rating,
-        }),
-      });
-
-      if (response.ok) {
-        // アニメーションのための短い遅延
-        await new Promise((resolve) => setTimeout(resolve, 300));
-
-        // 次のカードへ
-        if (currentIndex < cards.length - 1) {
-          setCurrentIndex(currentIndex + 1);
-          setShowAnswer(false);
-        } else {
-          // 現在のカードを完了したので、次のカードを取得
-          const currentCardId = cards[currentIndex]?.card_id;
-          setShowAnswer(false);
-          // 次のカードを取得（取得後にcurrentIndexを更新）
-          const nextCards = await fetchNextCard(currentCardId);
-          if (nextCards && nextCards.length > 0) {
-            setCurrentIndex(cards.length); // 新しいカードのインデックス
-          } else {
-            // これ以上カードがない
-            setCards([]);
-          }
-        }
-        setCardTransition(false);
-      } else {
-        alert('評価の送信に失敗しました');
-        setCardTransition(false);
-      }
-    } catch (error) {
-      console.error('Error submitting review:', error);
-      alert('エラーが発生しました');
-      setCardTransition(false);
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   if (showLimitSelector && !loading) {

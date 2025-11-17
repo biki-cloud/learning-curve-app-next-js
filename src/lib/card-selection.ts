@@ -28,7 +28,7 @@ export interface CardCandidate {
   embedding: string | null;
   difficulty: number | null;
   category: string | null;
-  next_review_at: number;
+  next_review_at: number | null;
   stage: number;
 }
 
@@ -46,9 +46,14 @@ export interface CurrentCard {
  * next_review_atが過ぎている日数が多いほど高スコア
  */
 export function calculateUrgencyScore(
-  nextReviewAt: number,
+  nextReviewAt: number | null,
   now: number
 ): number {
+  if (nextReviewAt === null) {
+    // next_review_atがnullの場合は最高優先度（新規カード）
+    return 1.0;
+  }
+  
   const msPerDay = 24 * 60 * 60 * 1000;
   const daysOverdue = Math.max(0, (now - nextReviewAt) / msPerDay);
   

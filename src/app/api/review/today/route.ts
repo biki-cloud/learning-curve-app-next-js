@@ -11,8 +11,6 @@ export const runtime = 'edge';
 
 // 1日あたりの新規カード上限
 const MAX_NEW_PER_DAY = 5;
-// 1日の総上限
-const MAX_TOTAL_PER_DAY = 30;
 
 // GET /api/review/today - 今日のレビュー対象カード取得
 export async function GET(request: Request) {
@@ -97,25 +95,42 @@ export async function GET(request: Request) {
           or(
             eq(cardStatesTable.stage, 0),
             isNull(cardStatesTable.stage)
-          )!
+          )
         )
       )
       .limit(MAX_NEW_PER_DAY);
 
     // 3. 今日の対象集合を作成（重複を除去）
-    const cardMap = new Map<number, typeof reviewCards[0]>();
+    // reviewCardsとnewCardsの型を統一（null許容型に統一）
+    type UnifiedCard = {
+      id: number;
+      question: string;
+      answer: string;
+      tags: string | null;
+      category: string | null;
+      difficulty: number | null;
+      embedding: string | null;
+      ease: number | null;
+      interval_days: number | null;
+      rep_count: number | null;
+      stage: number | null;
+      next_review_at: number | null;
+      last_reviewed_at: number | null;
+    };
+    
+    const cardMap = new Map<number, UnifiedCard>();
     
     // reviewCardsを追加
     for (const card of reviewCards) {
       if (!excludeIds.includes(card.id)) {
-        cardMap.set(card.id, card);
+        cardMap.set(card.id, card as UnifiedCard);
       }
     }
     
     // newCardsを追加（重複チェック）
     for (const card of newCards) {
       if (!excludeIds.includes(card.id) && !cardMap.has(card.id)) {
-        cardMap.set(card.id, card);
+        cardMap.set(card.id, card as UnifiedCard);
       }
     }
     
