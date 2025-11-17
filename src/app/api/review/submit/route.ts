@@ -4,6 +4,7 @@ import { db } from '@/server/db';
 import { cardStatesTable, reviewsTable } from '@/server/db/schema';
 import { getAuthUser } from '@/lib/supabase/server';
 import { updateCardState } from '@/lib/spaced-repetition';
+import { updateCardStateByStage } from '@/lib/learning-curve';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -43,7 +44,8 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Card state not found' }, { status: 404 });
     }
 
-    // カード状態を更新
+    // カード状態を更新（既存のeaseベースとstageベースの両方を更新）
+    const isCorrect = rating === 'good';
     const newState = updateCardState(
       {
         ease: currentState.ease,
@@ -56,14 +58,22 @@ export async function POST(request: Request) {
       now
     );
 
+    const currentStage = currentState.stage ?? 0;
+    const newStateByStage = updateCardStateByStage(currentStage, isCorrect, now);
+
+    // 正答率を計算（簡易版：直近の評価から）
+    const successRate = isCorrect ? 1.0 : 0.0;
+
     await db
       .update(cardStatesTable)
       .set({
         ease: newState.ease,
         interval_days: newState.interval_days,
         rep_count: newState.rep_count,
-        next_review_at: newState.next_review_at,
+        stage: newStateByStage.stage,
+        next_review_at: newStateByStage.next_review_at,
         last_reviewed_at: newState.last_reviewed_at,
+        success_rate: successRate,
       })
       .where(eq(cardStatesTable.id, currentState.id));
 

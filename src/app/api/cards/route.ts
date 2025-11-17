@@ -6,9 +6,12 @@ import { cardsTable, cardStatesTable } from '@/server/db/schema';
 import { getAuthUser } from '@/lib/supabase/server';
 import { syncUser } from '@/server/functions/users';
 import { createInitialCardState } from '@/lib/spaced-repetition';
+import { createInitialCardStateByStage } from '@/lib/learning-curve';
+import { generateEmbedding, serializeEmbedding } from '@/lib/embeddings';
 import { eq, and, or, like, sql, isNull, isNotNull, lte } from 'drizzle-orm';
 import { z } from 'zod';
 import { getTodayEndJST } from '@/lib/date-utils';
+import { env } from '@/env';
 
 export const runtime = 'edge';
 
@@ -16,6 +19,8 @@ const createCardSchema = z.object({
   question: z.string().min(1),
   answer: z.string().min(1),
   tags: z.string().optional(),
+  category: z.string().optional(),
+  difficulty: z.number().int().min(1).max(5).optional(),
 });
 
 // POST /api/cards - カード作成
@@ -30,9 +35,22 @@ export async function POST(request: Request) {
     await syncUser(user.id, user.email ?? '');
 
     const body = await request.json();
-    const { question, answer, tags } = createCardSchema.parse(body);
+    const { question, answer, tags, category, difficulty } = createCardSchema.parse(body);
 
     const now = Date.now();
+
+    // Embedding生成（タイトル＋内容から）
+    let embedding: string | null = null;
+    if (env.OPENAI_API_KEY) {
+      try {
+        const textForEmbedding = `${question}\n${answer}`;
+        const embeddingVector = await generateEmbedding(textForEmbedding);
+        embedding = serializeEmbedding(embeddingVector);
+      } catch (error) {
+        console.error('Error generating embedding:', error);
+        // embedding生成に失敗してもカード作成は続行
+      }
+    }
 
     // カードを作成
     const [card] = await db
@@ -42,7 +60,11 @@ export async function POST(request: Request) {
         question,
         answer,
         tags: tags ?? null,
+        category: category ?? null,
+        difficulty: difficulty ?? null,
+        embedding,
         created_at: now,
+        updated_at: now,
       })
       .returning();
 
@@ -50,15 +72,17 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Failed to create card' }, { status: 500 });
     }
 
-    // カード状態を初期化
+    // カード状態を初期化（既存のeaseベースとstageベースの両方を設定）
     const initialState = createInitialCardState(now);
+    const initialStateByStage = createInitialCardStateByStage(now);
     await db.insert(cardStatesTable).values({
       user_id: user.id,
       card_id: card.id,
       ease: initialState.ease,
       interval_days: initialState.interval_days,
       rep_count: initialState.rep_count,
-      next_review_at: initialState.next_review_at,
+      stage: initialStateByStage.stage,
+      next_review_at: initialStateByStage.next_review_at,
       last_reviewed_at: initialState.last_reviewed_at,
     });
 

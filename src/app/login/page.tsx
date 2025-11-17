@@ -59,13 +59,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-md">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            LearnCurve にログイン
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+    <div className="bg-background flex min-h-screen items-center justify-center p-4">
+      <div className="bg-card text-card-foreground w-full max-w-md space-y-8 rounded-lg border p-8 shadow-sm">
+        <div className="text-center">
+          <div className="mb-4 text-5xl">📚</div>
+          <h2 className="text-3xl font-bold tracking-tight">LearnCurve にログイン</h2>
+          <p className="text-muted-foreground mt-3 text-sm">
             Googleでログインするか、メールアドレスでMagic Linkを受け取ります
           </p>
         </div>
@@ -76,7 +75,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="group relative flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+              className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus:ring-ring flex w-full items-center justify-center rounded-md border px-4 py-3 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50"
             >
               <svg
                 className="mr-2 h-5 w-5"
@@ -108,10 +107,10 @@ export default function LoginPage() {
           {/* 区切り線 */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="border-border w-full border-t" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-2 text-gray-500">または</span>
+              <span className="bg-card text-muted-foreground px-2">または</span>
             </div>
           </div>
 
@@ -129,17 +128,17 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="relative block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
+                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="メールアドレス"
               />
             </div>
 
             {message && (
               <div
-                className={`rounded-md p-3 ${
+                className={`rounded-md border p-3 ${
                   message.includes('エラー')
-                    ? 'bg-red-50 text-red-800'
-                    : 'bg-green-50 text-green-800'
+                    ? 'border-destructive/50 bg-destructive/10 text-destructive'
+                    : 'border-green-500/50 bg-green-500/10 text-green-700'
                 }`}
               >
                 {message}
@@ -150,7 +149,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-ring flex w-full items-center justify-center rounded-md px-4 py-3 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50"
               >
                 {loading ? '送信中...' : 'Magic Link を送信'}
               </button>
