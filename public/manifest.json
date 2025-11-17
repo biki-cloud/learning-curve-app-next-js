@@ -1,0 +1,24 @@
+{
+  "name": "LearnCurve - エンジニア向け学習曲線アプリ",
+  "short_name": "LearnCurve",
+  "description": "忘却曲線に基づいた最適なタイミングで知識を思い出せる学習アプリ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
+
