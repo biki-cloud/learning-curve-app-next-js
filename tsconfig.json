@@ -32,6 +32,7 @@
   "include": [
     ".eslintrc.cjs",
     "next-env.d.ts",
+    "next-pwa.d.ts",
     "**/*.ts",
     "**/*.tsx",
     "**/*.cjs",
@@ -40,5 +41,11 @@
     "next.config.mjs",
     "env.d.ts"
   ],
-  "exclude": ["node_modules", "tsconfig.json"]
+  "exclude": [
+    "node_modules",
+    "tsconfig.json",
+    "public/sw.js",
+    "public/workbox-*.js",
+    "public/fallback-*.js"
+  ]
 }

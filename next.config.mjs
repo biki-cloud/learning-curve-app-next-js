@@ -1,10 +1,32 @@
 // we import the utility from the next-dev submodule
 import { setupDevPlatform } from '@cloudflare/next-on-pages/next-dev';
+import withPWA from 'next-pwa';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {};
 
-export default nextConfig;
+const pwaConfig = withPWA({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development',
+  runtimeCaching: [
+    {
+      urlPattern: /^https?.*/,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'offlineCache',
+        expiration: {
+          maxEntries: 200,
+        },
+      },
+    },
+  ],
+});
+
+const config = pwaConfig(nextConfig);
+
+export default config;
 
 // we only need to use the utility during development so we can check NODE_ENV
 // (note: this check is recommended but completely optional)
