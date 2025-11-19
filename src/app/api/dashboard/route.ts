@@ -40,12 +40,9 @@ export async function GET(request: Request) {
       .from(cardsTable)
       .where(eq(cardsTable.user_id, user.id));
 
-    // TODO: ストリーク計算（将来的に実装）
-
     return Response.json({
       today_review_count: todayReviewCards.length,
       total_cards: totalCards.length,
-      streak: 0, // 将来的に実装
     });
   } catch (error) {
     console.error('Error fetching dashboard:', error);
