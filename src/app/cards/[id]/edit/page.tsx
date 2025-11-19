@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Navbar from '@/components/navbar';
 
 interface Card {
   id: number;
@@ -211,27 +212,15 @@ export default function EditCardPage({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/home" className="text-xl font-bold text-gray-900">
-                LearnCurve
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-background">
+      <Navbar currentPath="/cards" />
+      <main className="container mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8 max-w-3xl">
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4 sm:mb-6">カード編集</h2>
 
-      <main className="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">カード編集</h2>
-
-          <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6">
+          <form onSubmit={handleSubmit} className="bg-card text-card-foreground shadow-sm rounded-lg border p-4 sm:p-6">
             <div className="mb-4">
-              <label htmlFor="question" className="block text-sm font-medium text-gray-700 mb-2">
-                質問 / タイトル <span className="text-red-500">*</span>
+              <label htmlFor="question" className="block text-sm font-medium text-foreground mb-2">
+                質問 / タイトル <span className="text-destructive">*</span>
               </label>
               <textarea
                 id="question"
@@ -239,14 +228,14 @@ export default function EditCardPage({
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="flex h-auto w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
               />
             </div>
 
             <div className="mb-4">
-              <label htmlFor="answer" className="block text-sm font-medium text-gray-700 mb-2">
-                回答 <span className="text-red-500">*</span>
-                <span className="ml-2 text-xs text-gray-500">(Markdown対応)</span>
+              <label htmlFor="answer" className="block text-sm font-medium text-foreground mb-2">
+                回答 <span className="text-destructive">*</span>
+                <span className="ml-2 text-xs text-muted-foreground">(Markdown対応)</span>
               </label>
               <textarea
                 id="answer"
@@ -254,15 +243,15 @@ export default function EditCardPage({
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 rows={12}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                className="flex h-auto w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Markdown形式で記述できます。コードブロック、リスト、リンクなどが使用可能です。
               </p>
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 タグ
               </label>
 
@@ -272,13 +261,13 @@ export default function EditCardPage({
                   {selectedTags.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800"
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-secondary text-secondary-foreground"
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => handleRemoveTag(tag)}
-                        className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-indigo-200 focus:outline-none"
+                        className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-secondary/80 focus:outline-none"
                       >
                         <span className="sr-only">削除</span>
                         ×
@@ -291,7 +280,7 @@ export default function EditCardPage({
               {/* 既存のタグから選択 */}
               {!loadingTags && availableTags.length > 0 && (
                 <div className="mb-3">
-                  <p className="text-xs text-gray-500 mb-2">既存のタグから選択:</p>
+                  <p className="text-xs text-muted-foreground mb-2">既存のタグから選択:</p>
                   <div className="flex flex-wrap gap-2">
                     {availableTags.map((tag) => (
                       <button
@@ -300,8 +289,8 @@ export default function EditCardPage({
                         onClick={() => handleTagToggle(tag)}
                         className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
                           selectedTags.includes(tag)
-                            ? 'bg-indigo-600 text-white border-indigo-600'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-background text-foreground border-input hover:bg-accent hover:text-accent-foreground'
                         }`}
                       >
                         {tag}
@@ -312,7 +301,7 @@ export default function EditCardPage({
               )}
 
               {/* 新しいタグを追加 */}
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   value={newTag}
@@ -323,36 +312,35 @@ export default function EditCardPage({
                       handleAddNewTag();
                     }
                   }}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   placeholder="新しいタグを入力してEnter"
                 />
                 <button
                   type="button"
                   onClick={handleAddNewTag}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
                 >
                   追加
                 </button>
               </div>
             </div>
 
-            <div className="flex justify-end space-x-4">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4">
               <Link
                 href="/cards"
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
               >
                 キャンセル
               </Link>
               <button
                 type="submit"
                 disabled={saving}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
+                className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? '保存中...' : '保存'}
               </button>
             </div>
           </form>
-        </div>
       </main>
     </div>
   );

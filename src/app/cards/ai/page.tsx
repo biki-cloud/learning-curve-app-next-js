@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import Navbar from '@/components/navbar';
 
 export default function AICardPage() {
   const router = useRouter();
@@ -228,32 +229,20 @@ export default function AICardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/home" className="text-xl font-bold text-gray-900">
-                LearnCurve
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">AI自動カード作成</h2>
-            <p className="mt-2 text-sm text-gray-600">
+    <div className="min-h-screen bg-background">
+      <Navbar currentPath="/cards" />
+      <main className="container mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8 max-w-4xl">
+          <div className="mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-foreground">AI自動カード作成</h2>
+            <p className="mt-2 text-xs sm:text-sm text-muted-foreground">
               学習したいテーマや問題を入力すると、AIが最適な学習カードを自動生成します。
               AIは「1つの概念に1つのカード」というベストプラクティスに従ってカードを作成します。
             </p>
           </div>
 
           {/* プロンプトのコツ */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+          <div className="bg-muted border border-border rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+            <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3">
               💡 プロンプトのコツ
             </h3>
             <div className="space-y-4">
@@ -284,20 +273,20 @@ export default function AICardPage() {
           </div>
 
           {/* 入力フォーム */}
-          <div className="bg-white shadow rounded-lg p-6 mb-6">
+          <div className="bg-card text-card-foreground shadow-sm rounded-lg border p-4 sm:p-6 mb-4 sm:mb-6">
             <div className="mb-4">
-              <label htmlFor="question" className="block text-sm font-medium text-gray-700 mb-2">
-                テーマ・問題 <span className="text-red-500">*</span>
+              <label htmlFor="question" className="block text-sm font-medium text-foreground mb-2">
+                テーマ・問題 <span className="text-destructive">*</span>
               </label>
               <textarea
                 id="question"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className="flex h-auto w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
                 placeholder="例: ReactのHooksについて、HTTPとHTTPSの違い、トランザクション分離レベルなど"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 複数の概念を含むテーマの場合、AIが自動的に複数のカードに分割します。
               </p>
             </div>
@@ -306,7 +295,7 @@ export default function AICardPage() {
               type="button"
               onClick={handleAIGenerate}
               disabled={aiLoading || !question.trim()}
-              className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-medium rounded-md shadow-sm hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full px-4 py-2 sm:py-3 bg-primary text-primary-foreground font-medium rounded-md shadow-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
             >
               {aiLoading ? (
                 <>
@@ -329,30 +318,30 @@ export default function AICardPage() {
 
           {/* 生成結果 */}
           {aiResult && (
-            <div className="bg-white shadow rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
+            <div className="bg-card text-card-foreground shadow-sm rounded-lg border p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
+                <h3 className="text-base sm:text-lg font-semibold text-foreground">
                   {aiResult.shouldSplit && aiResult.splitCards.length > 0
                     ? `生成されたカード (${aiResult.splitCards.length}枚)`
                     : '生成されたカード'}
                 </h3>
                 {aiResult.shouldSplit && aiResult.splitCards.length > 0 && (
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                     <button
                       type="button"
                       onClick={handleSelectAll}
-                      className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                      className="text-sm font-medium text-primary hover:text-primary/80"
                     >
                       {selectedCards.size === aiResult.splitCards.length ? 'すべて解除' : 'すべて選択'}
                     </button>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-xs sm:text-sm text-muted-foreground">
                       {selectedCards.size > 0 && `${selectedCards.size}枚選択中`}
                     </span>
                     <button
                       type="button"
                       onClick={handleSaveSelectedCards}
                       disabled={selectedCards.size === 0 || savingCards}
-                      className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
                     >
                       {savingCards ? (
                         <>
@@ -510,15 +499,14 @@ export default function AICardPage() {
           )}
 
           {/* 戻るボタン */}
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-6">
             <Link
               href="/cards"
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              className="inline-flex items-center px-4 py-2 border border-input bg-background rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
             >
               カード一覧に戻る
             </Link>
           </div>
-        </div>
       </main>
     </div>
   );

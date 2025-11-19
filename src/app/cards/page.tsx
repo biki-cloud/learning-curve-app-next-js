@@ -190,13 +190,13 @@ export default function CardsPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar currentPath="/cards" />
-      <main className="container mx-auto py-6">
-        <div className="flex justify-between items-center mb-6">
+      <main className="container mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4 sm:mb-6">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">カード一覧</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">カード一覧</h2>
             <p className="text-sm text-muted-foreground mt-1">{cards.length} 枚のカード</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Link
               href="/cards/ai"
               className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
@@ -213,8 +213,8 @@ export default function CardsPage() {
         </div>
 
         {/* フィルターUI */}
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* 検索バー */}
             <div>
               <label htmlFor="search" className="block text-sm font-medium mb-2">
@@ -306,10 +306,10 @@ export default function CardsPage() {
                   key={card.id}
                   className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow"
                 >
-                  <div className="p-6">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="text-lg font-semibold mb-3 leading-relaxed">
+                  <div className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-base sm:text-lg font-semibold mb-3 leading-relaxed">
                           <MarkdownRenderer content={card.question} />
                         </div>
                         {card.tags && (
@@ -325,27 +325,27 @@ export default function CardsPage() {
                           </div>
                         )}
                         {isExpanded && (
-                          <div className="mt-4 p-4 rounded-md border bg-muted">
+                          <div className="mt-4 p-3 sm:p-4 rounded-md border bg-muted">
                             <div className="text-sm font-medium text-muted-foreground mb-2">答え</div>
-                            <div className="leading-relaxed">
+                            <div className="leading-relaxed text-sm sm:text-base">
                               <MarkdownRenderer content={card.answer} />
                             </div>
                           </div>
                         )}
                         <div className="mt-4 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm text-muted-foreground">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <p className="text-xs sm:text-sm text-muted-foreground">
                               作成日: {new Date(card.created_at).toLocaleDateString('ja-JP')}
                             </p>
                             <button
                               onClick={() => toggleCard(card.id)}
-                              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                              className="text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors text-left sm:text-right"
                             >
                               {isExpanded ? '回答を隠す' : '回答を表示'}
                             </button>
                           </div>
                           {card.ease !== null && (
-                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                            <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <span>習熟度:</span>
                                 <span className="font-medium text-foreground">
@@ -378,16 +378,16 @@ export default function CardsPage() {
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-2 ml-4">
+                      <div className="flex gap-2 sm:ml-4">
                         <Link
                           href={`/cards/${card.id}/edit`}
-                          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground flex-1 sm:flex-none"
                         >
                           編集
                         </Link>
                         <button
                           onClick={() => handleDelete(card.id)}
-                          className="inline-flex items-center justify-center rounded-md border border-destructive/50 bg-background px-3 py-1.5 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+                          className="inline-flex items-center justify-center rounded-md border border-destructive/50 bg-background px-3 py-1.5 text-xs sm:text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 flex-1 sm:flex-none"
                         >
                           削除
                         </button>

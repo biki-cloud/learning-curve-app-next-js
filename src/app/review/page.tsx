@@ -271,13 +271,15 @@ export default function ReviewPage() {
     return (
       <div className="bg-background min-h-screen">
         <Navbar currentPath="/review" />
-        <div className="flex items-center justify-center p-4">
+        <div className="flex items-center justify-center p-4 sm:p-6">
           <div className="w-full max-w-lg">
-            <div className="bg-card text-card-foreground rounded-lg border p-8 shadow-sm">
-              <div className="mb-8 text-center">
-                <div className="mb-4 text-5xl">📚</div>
-                <h2 className="mb-2 text-3xl font-bold tracking-tight">復習を開始</h2>
-                <p className="text-muted-foreground">今日は何枚のカードを復習しますか？</p>
+            <div className="bg-card text-card-foreground rounded-lg border p-6 shadow-sm sm:p-8">
+              <div className="mb-6 text-center sm:mb-8">
+                <div className="mb-4 text-4xl sm:text-5xl">📚</div>
+                <h2 className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl">復習を開始</h2>
+                <p className="text-muted-foreground text-sm sm:text-base">
+                  今日は何枚のカードを復習しますか？
+                </p>
               </div>
 
               {/* キーワード入力欄 */}
@@ -301,7 +303,7 @@ export default function ReviewPage() {
                 </p>
               </div>
 
-              <div className="mb-6 grid grid-cols-2 gap-4">
+              <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4">
                 {[
                   { limit: 5, label: '5枚', desc: '軽め', emoji: '☕' },
                   { limit: 10, label: '10枚', desc: '標準', emoji: '📖' },
@@ -311,20 +313,20 @@ export default function ReviewPage() {
                   <button
                     key={limit}
                     onClick={() => handleStartReview(limit)}
-                    className="bg-background hover:bg-accent hover:text-accent-foreground flex flex-col items-center rounded-md border p-4 transition-colors"
+                    className="bg-background hover:bg-accent hover:text-accent-foreground flex flex-col items-center rounded-md border p-3 transition-colors sm:p-4"
                   >
-                    <div className="mb-1 text-2xl">{emoji}</div>
-                    <div className="font-semibold">{label}</div>
+                    <div className="mb-1 text-xl sm:text-2xl">{emoji}</div>
+                    <div className="text-sm font-semibold sm:text-base">{label}</div>
                     <div className="text-muted-foreground mt-1 text-xs">{desc}</div>
                   </button>
                 ))}
               </div>
-              <div className="border-t pt-6">
+              <div className="border-t pt-4 sm:pt-6">
                 <button
                   onClick={() => handleStartReview(50)}
-                  className="bg-background hover:bg-accent hover:text-accent-foreground w-full rounded-md border px-4 py-3 text-sm font-medium transition-colors"
+                  className="bg-background hover:bg-accent hover:text-accent-foreground w-full rounded-md border px-4 py-2 text-sm font-medium transition-colors sm:py-3"
                 >
-                  <span className="mr-2 text-xl">⚡</span>
+                  <span className="mr-2 text-lg sm:text-xl">⚡</span>
                   カスタム: 50枚
                 </button>
               </div>
@@ -361,15 +363,15 @@ export default function ReviewPage() {
     return (
       <div className="bg-background min-h-screen">
         <Navbar currentPath="/review" />
-        <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
-          <div className="mx-4 max-w-md text-center">
+        <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4">
+          <div className="w-full max-w-md text-center">
             {isNoCardsAtStart ? (
               <>
-                <div className="mb-4 text-6xl">📭</div>
-                <h2 className="mb-2 text-2xl font-bold tracking-tight">
+                <div className="mb-4 text-5xl sm:text-6xl">📭</div>
+                <h2 className="mb-2 text-xl font-bold tracking-tight sm:text-2xl">
                   レビューするカードがありません
                 </h2>
-                <p className="text-muted-foreground mb-6">
+                <p className="text-muted-foreground mb-6 text-sm sm:text-base">
                   今日は復習対象のカードがないようです。
                   <br />
                   新しいカードを作成するか、明日またお試しください。
@@ -391,9 +393,11 @@ export default function ReviewPage() {
               </>
             ) : (
               <>
-                <div className="mb-4 text-6xl">🎉</div>
-                <h2 className="mb-2 text-2xl font-bold tracking-tight">今日の復習は完了しました</h2>
-                <p className="text-muted-foreground mb-6">お疲れ様でした！</p>
+                <div className="mb-4 text-5xl sm:text-6xl">🎉</div>
+                <h2 className="mb-2 text-xl font-bold tracking-tight sm:text-2xl">
+                  今日の復習は完了しました
+                </h2>
+                <p className="text-muted-foreground mb-6 text-sm sm:text-base">お疲れ様でした！</p>
                 <Link
                   href="/home"
                   className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
@@ -418,19 +422,19 @@ export default function ReviewPage() {
   return (
     <div className="bg-background min-h-screen">
       <Navbar currentPath="/review" />
-      <main className="container mx-auto py-6">
-        <div className="mb-6 flex items-center justify-between">
+      <main className="container mx-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+        <div className="mb-4 flex items-center justify-between sm:mb-6">
           <div>
-            <div className="text-muted-foreground text-sm font-medium">進捗</div>
-            <div className="text-2xl font-bold">{Math.round(progress)}%</div>
-            <div className="text-muted-foreground text-sm">
+            <div className="text-muted-foreground text-xs font-medium sm:text-sm">進捗</div>
+            <div className="text-xl font-bold sm:text-2xl">{Math.round(progress)}%</div>
+            <div className="text-muted-foreground text-xs sm:text-sm">
               {currentIndex + 1} / {cards.length} (残り {remaining} 枚)
             </div>
           </div>
         </div>
 
         {/* プログレスバー */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <div className="bg-secondary h-2 w-full overflow-hidden rounded-full">
             <div
               className="bg-primary h-full transition-all duration-500 ease-out"
@@ -441,7 +445,7 @@ export default function ReviewPage() {
 
         {/* カード表示 */}
         <div
-          className={`bg-card text-card-foreground mb-6 flex min-h-[450px] flex-col justify-between rounded-lg border p-6 shadow-sm transition-all duration-300 md:p-8 ${
+          className={`bg-card text-card-foreground mb-4 flex min-h-[400px] flex-col justify-between rounded-lg border p-4 shadow-sm transition-all duration-300 sm:mb-6 sm:min-h-[450px] sm:p-6 md:p-8 ${
             cardTransition ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
           }`}
         >
@@ -459,14 +463,16 @@ export default function ReviewPage() {
               </div>
             )}
 
-            <div className="mb-8 text-2xl font-bold leading-relaxed md:text-3xl">
+            <div className="mb-6 text-xl font-bold leading-relaxed sm:mb-8 sm:text-2xl md:text-3xl">
               <MarkdownRenderer content={currentCard.question} />
             </div>
 
             {showAnswer && (
-              <div className="bg-muted mt-8 rounded-md border p-6">
-                <div className="text-muted-foreground mb-3 text-sm font-medium">答え</div>
-                <div className="text-lg leading-relaxed">
+              <div className="bg-muted mt-6 rounded-md border p-4 sm:mt-8 sm:p-6">
+                <div className="text-muted-foreground mb-3 text-xs font-medium sm:text-sm">
+                  答え
+                </div>
+                <div className="text-base leading-relaxed sm:text-lg">
                   <MarkdownRenderer content={currentCard.answer} />
                 </div>
               </div>
@@ -476,38 +482,38 @@ export default function ReviewPage() {
           {!showAnswer ? (
             <button
               onClick={() => setShowAnswer(true)}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 mt-8 w-full rounded-md px-6 py-3 text-base font-medium transition-colors"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 mt-6 w-full rounded-md px-4 py-2 text-sm font-medium transition-colors sm:mt-8 sm:px-6 sm:py-3 sm:text-base"
             >
               答えを見る
             </button>
           ) : (
-            <div className="mt-8 space-y-4">
-              <p className="text-muted-foreground text-center text-sm font-medium">
+            <div className="mt-6 space-y-3 sm:mt-8 sm:space-y-4">
+              <p className="text-muted-foreground text-center text-xs font-medium sm:text-sm">
                 どのくらい覚えていましたか？
               </p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <button
                   onClick={() => handleRating('again')}
                   disabled={submitting}
-                  className="border-destructive/50 bg-background text-destructive hover:bg-destructive/10 flex flex-col items-center rounded-md border px-4 py-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  className="border-destructive/50 bg-background text-destructive hover:bg-destructive/10 flex flex-col items-center rounded-md border px-2 py-3 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-4 sm:text-sm"
                 >
-                  <div className="mb-1 text-xl">❌</div>
+                  <div className="mb-1 text-lg sm:text-xl">❌</div>
                   <div className="font-semibold">Again</div>
                 </button>
                 <button
                   onClick={() => handleRating('hard')}
                   disabled={submitting}
-                  className="bg-secondary text-secondary-foreground hover:bg-secondary/80 flex flex-col items-center rounded-md border px-4 py-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  className="bg-secondary text-secondary-foreground hover:bg-secondary/80 flex flex-col items-center rounded-md border px-2 py-3 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-4 sm:text-sm"
                 >
-                  <div className="mb-1 text-xl">🤔</div>
+                  <div className="mb-1 text-lg sm:text-xl">🤔</div>
                   <div className="font-semibold">Hard</div>
                 </button>
                 <button
                   onClick={() => handleRating('good')}
                   disabled={submitting}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 flex flex-col items-center rounded-md px-4 py-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 flex flex-col items-center rounded-md px-2 py-3 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-4 sm:text-sm"
                 >
-                  <div className="mb-1 text-xl">✅</div>
+                  <div className="mb-1 text-lg sm:text-xl">✅</div>
                   <div className="font-semibold">Good</div>
                 </button>
               </div>

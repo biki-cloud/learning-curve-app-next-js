@@ -59,12 +59,12 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="bg-background flex min-h-screen items-center justify-center p-4">
-      <div className="bg-card text-card-foreground w-full max-w-md space-y-8 rounded-lg border p-8 shadow-sm">
+    <div className="bg-background flex min-h-screen items-center justify-center p-4 sm:p-6">
+      <div className="bg-card text-card-foreground w-full max-w-md space-y-6 rounded-lg border p-6 shadow-sm sm:space-y-8 sm:p-8">
         <div className="text-center">
-          <div className="mb-4 text-5xl">📚</div>
-          <h2 className="text-3xl font-bold tracking-tight">LearnCurve にログイン</h2>
-          <p className="text-muted-foreground mt-3 text-sm">
+          <div className="mb-4 text-4xl sm:text-5xl">📚</div>
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">LearnCurve にログイン</h2>
+          <p className="text-muted-foreground mt-3 text-xs sm:text-sm">
             Googleでログインするか、メールアドレスでMagic Linkを受け取ります
           </p>
         </div>

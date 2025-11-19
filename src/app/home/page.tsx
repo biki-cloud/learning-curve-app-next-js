@@ -78,17 +78,17 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar currentPath="/home" />
-      <main className="container mx-auto py-8 px-4">
+      <main className="container mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
         {/* ウェルカムメッセージ */}
-        <div className="mb-10">
-          <h1 className="text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+        <div className="mb-6 sm:mb-10">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
             ダッシュボード
           </h1>
-          <p className="text-muted-foreground text-lg">今日も学習を続けましょう ✨</p>
+          <p className="text-muted-foreground text-base sm:text-lg">今日も学習を続けましょう ✨</p>
         </div>
 
         {/* 統計カード */}
-        <div className="grid gap-6 md:grid-cols-3 mb-10">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-6 sm:mb-10">
           <div className="group relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="relative p-6">
@@ -145,19 +145,19 @@ export default function HomePage() {
         </div>
 
         {/* アクションボタン */}
-        <div className="mb-10">
-          <h3 className="text-xl font-semibold mb-6">クイックアクション</h3>
-          <div className="grid gap-4 md:grid-cols-3">
+        <div className="mb-6 sm:mb-10">
+          <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">クイックアクション</h3>
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             <Link
               href="/review"
               className="group relative overflow-hidden rounded-xl border bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-sm transition-all hover:shadow-lg hover:scale-[1.02]"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="relative p-8">
-                <div className="text-4xl mb-4">🎯</div>
-                <div className="font-bold text-lg mb-2">レビュー開始</div>
-                <div className="text-sm opacity-90">今日の復習を始める</div>
-                <div className="mt-4 text-xs opacity-75">→ 今すぐ始める</div>
+              <div className="relative p-6 sm:p-8">
+                <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">🎯</div>
+                <div className="font-bold text-base sm:text-lg mb-2">レビュー開始</div>
+                <div className="text-xs sm:text-sm opacity-90">今日の復習を始める</div>
+                <div className="mt-3 sm:mt-4 text-xs opacity-75">→ 今すぐ始める</div>
               </div>
             </Link>
 
@@ -166,11 +166,11 @@ export default function HomePage() {
               className="group relative overflow-hidden rounded-xl border bg-gradient-to-br from-secondary to-secondary/80 text-secondary-foreground shadow-sm transition-all hover:shadow-lg hover:scale-[1.02]"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="relative p-8">
-                <div className="text-4xl mb-4">✨</div>
-                <div className="font-bold text-lg mb-2">AI自動作成</div>
-                <div className="text-sm opacity-90">AIでカードを生成</div>
-                <div className="mt-4 text-xs opacity-75">→ AIに任せる</div>
+              <div className="relative p-6 sm:p-8">
+                <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">✨</div>
+                <div className="font-bold text-base sm:text-lg mb-2">AI自動作成</div>
+                <div className="text-xs sm:text-sm opacity-90">AIでカードを生成</div>
+                <div className="mt-3 sm:mt-4 text-xs opacity-75">→ AIに任せる</div>
               </div>
             </Link>
 
@@ -179,11 +179,11 @@ export default function HomePage() {
               className="group relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-lg hover:scale-[1.02] hover:border-primary/20"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="relative p-8">
-                <div className="text-4xl mb-4">➕</div>
-                <div className="font-bold text-lg mb-2">カード作成</div>
-                <div className="text-sm text-muted-foreground">新しいカードを追加</div>
-                <div className="mt-4 text-xs text-muted-foreground">→ 手動で作成</div>
+              <div className="relative p-6 sm:p-8">
+                <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">➕</div>
+                <div className="font-bold text-base sm:text-lg mb-2">カード作成</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">新しいカードを追加</div>
+                <div className="mt-3 sm:mt-4 text-xs text-muted-foreground">→ 手動で作成</div>
               </div>
             </Link>
           </div>
