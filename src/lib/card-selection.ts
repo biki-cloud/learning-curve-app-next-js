@@ -9,6 +9,7 @@ export interface ScoringWeights {
   urgency: number; // 緊急度の重み（α）
   similarity: number; // 類似度の重み（β）
   difficultyFit: number; // 難易度フィットの重み（γ）
+  keywordRelevance: number; // キーワード関連度の重み（δ）
 }
 
 /**
@@ -18,6 +19,17 @@ export const DEFAULT_WEIGHTS: ScoringWeights = {
   urgency: 0.5,
   similarity: 0.3,
   difficultyFit: 0.2,
+  keywordRelevance: 0.0, // デフォルトではキーワードは使用しない
+};
+
+/**
+ * キーワード優先モードの重み（キーワードが指定された場合）
+ */
+export const KEYWORD_PRIORITY_WEIGHTS: ScoringWeights = {
+  urgency: 0.3,
+  similarity: 0.2,
+  difficultyFit: 0.1,
+  keywordRelevance: 0.4, // キーワード関連度を重視
 };
 
 /**
@@ -89,6 +101,32 @@ export function calculateSimilarityScore(
 }
 
 /**
+ * キーワード関連度スコアを計算（0〜1）
+ * キーワードのembeddingとカードのembeddingの類似度
+ */
+export function calculateKeywordRelevanceScore(
+  keywordEmbedding: number[] | null,
+  candidateEmbedding: string | null
+): number {
+  if (!keywordEmbedding || !candidateEmbedding) {
+    return 0; // embeddingがない場合は0
+  }
+
+  const candidateVec = parseEmbedding(candidateEmbedding);
+  if (!candidateVec) {
+    return 0;
+  }
+
+  try {
+    const similarity = cosineSimilarity(keywordEmbedding, candidateVec);
+    // コサイン類似度は-1〜1の範囲なので、0〜1に正規化
+    return (similarity + 1) / 2;
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * 難易度フィットスコアを計算（0〜1）
  * 差が小さいほど高スコア
  */
@@ -121,7 +159,8 @@ export function calculateCardScore(
   candidate: CardCandidate,
   currentCard: CurrentCard | null,
   now: number,
-  weights: ScoringWeights = DEFAULT_WEIGHTS
+  weights: ScoringWeights = DEFAULT_WEIGHTS,
+  keywordEmbedding: number[] | null = null
 ): number {
   const urgencyScore = calculateUrgencyScore(candidate.next_review_at, now);
   const similarityScore = currentCard
@@ -130,11 +169,15 @@ export function calculateCardScore(
   const difficultyFitScore = currentCard
     ? calculateDifficultyFitScore(currentCard.difficulty, candidate.difficulty)
     : 0.5;
+  const keywordRelevanceScore = keywordEmbedding
+    ? calculateKeywordRelevanceScore(keywordEmbedding, candidate.embedding)
+    : 0;
 
   return (
     weights.urgency * urgencyScore +
     weights.similarity * similarityScore +
-    weights.difficultyFit * difficultyFitScore
+    weights.difficultyFit * difficultyFitScore +
+    weights.keywordRelevance * keywordRelevanceScore
   );
 }
 
@@ -145,7 +188,8 @@ export function selectNextCard(
   candidates: CardCandidate[],
   currentCard: CurrentCard | null,
   now: number,
-  weights: ScoringWeights = DEFAULT_WEIGHTS
+  weights: ScoringWeights = DEFAULT_WEIGHTS,
+  keywordEmbedding: number[] | null = null
 ): CardCandidate | null {
   if (candidates.length === 0) {
     return null;
@@ -155,7 +199,7 @@ export function selectNextCard(
   let bestScore = -1;
 
   for (const candidate of candidates) {
-    const score = calculateCardScore(candidate, currentCard, now, weights);
+    const score = calculateCardScore(candidate, currentCard, now, weights, keywordEmbedding);
     if (score > bestScore) {
       bestScore = score;
       bestCard = candidate;

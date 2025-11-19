@@ -34,6 +34,7 @@ export default function ReviewPage() {
   const [cardTransition, setCardTransition] = useState(false);
   const [showKeyboardHints, setShowKeyboardHints] = useState(true);
   const [isNoCardsAtStart, setIsNoCardsAtStart] = useState(false);
+  const [keyword, setKeyword] = useState('');
 
   useEffect(() => {
     void checkAuth();
@@ -61,6 +62,10 @@ export default function ReviewPage() {
         }
         if (reviewedIds.length > 0) {
           params.append('excludeIds', reviewedIds.join(','));
+        }
+        // キーワードが設定されている場合は追加
+        if (keyword && keyword.trim()) {
+          params.append('keyword', keyword.trim());
         }
 
         const response = await fetch(`/api/review/today?${params.toString()}`, {
@@ -100,7 +105,7 @@ export default function ReviewPage() {
         return null;
       }
     },
-    [cards]
+    [cards, keyword]
   );
 
   const handleRating = useCallback(
@@ -232,7 +237,14 @@ export default function ReviewPage() {
         return;
       }
 
-      const response = await fetch(`/api/review/today?limit=${limit}`, {
+      // URLパラメータを構築
+      const params = new URLSearchParams();
+      params.append('limit', limit.toString());
+      if (keyword && keyword.trim()) {
+        params.append('keyword', keyword.trim());
+      }
+
+      const response = await fetch(`/api/review/today?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -277,6 +289,10 @@ export default function ReviewPage() {
     void fetchReviewCards(limit);
   };
 
+  const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setKeyword(e.target.value);
+  };
+
   if (showLimitSelector && !loading) {
     return (
       <div className="bg-background min-h-screen">
@@ -289,6 +305,28 @@ export default function ReviewPage() {
                 <h2 className="mb-2 text-3xl font-bold tracking-tight">復習を開始</h2>
                 <p className="text-muted-foreground">今日は何枚のカードを復習しますか？</p>
               </div>
+
+              {/* キーワード入力欄 */}
+              <div className="mb-6">
+                <label
+                  htmlFor="keyword"
+                  className="text-muted-foreground mb-2 block text-sm font-medium"
+                >
+                  キーワード（オプション）
+                </label>
+                <input
+                  id="keyword"
+                  type="text"
+                  value={keyword}
+                  onChange={handleKeywordChange}
+                  placeholder="例: アルゴリズム、データベース、React..."
+                  className="bg-background border-input focus:ring-ring w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+                />
+                <p className="text-muted-foreground mt-1 text-xs">
+                  キーワードを入力すると、関連するカードを優先して出題します
+                </p>
+              </div>
+
               <div className="mb-6 grid grid-cols-2 gap-4">
                 {[
                   { limit: 5, label: '5枚', desc: '軽め', emoji: '☕' },

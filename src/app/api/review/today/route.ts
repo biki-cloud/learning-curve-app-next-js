@@ -5,7 +5,8 @@ import { cardsTable, cardStatesTable } from '@/server/db/schema';
 import { getAuthUser } from '@/lib/supabase/server';
 import { eq, and, lte, or, isNull } from 'drizzle-orm';
 import { getTodayEndJST } from '@/lib/date-utils';
-import { selectNextCard, type CardCandidate, type CurrentCard } from '@/lib/card-selection';
+import { selectNextCard, type CardCandidate, type CurrentCard, KEYWORD_PRIORITY_WEIGHTS, DEFAULT_WEIGHTS } from '@/lib/card-selection';
+import { generateEmbedding } from '@/lib/embeddings';
 
 export const runtime = 'edge';
 
@@ -27,6 +28,7 @@ export async function GET(request: Request) {
     const excludeIds = excludeIdsParam
       ? excludeIdsParam.split(',').map((id) => parseInt(id, 10)).filter((id) => !isNaN(id))
       : [];
+    const keyword = url.searchParams.get('keyword'); // キーワード（オプション）
 
     // 日本時間の「今日」の終了時刻を使用
     const todayEndJST = getTodayEndJST();
@@ -159,7 +161,21 @@ export async function GET(request: Request) {
       }
     }
 
-    // 5. 候補をCardCandidate形式に変換
+    // 5. キーワードのembeddingを生成（キーワードが指定されている場合）
+    let keywordEmbedding: number[] | null = null;
+    let weights = DEFAULT_WEIGHTS;
+    
+    if (keyword && keyword.trim()) {
+      try {
+        keywordEmbedding = await generateEmbedding(keyword.trim());
+        weights = KEYWORD_PRIORITY_WEIGHTS; // キーワード優先モードに切り替え
+      } catch (error) {
+        console.error('Error generating keyword embedding:', error);
+        // エラーが発生しても処理は続行（キーワードなしで動作）
+      }
+    }
+
+    // 6. 候補をCardCandidate形式に変換
     const candidates: CardCandidate[] = todayPool.map((card) => ({
       id: card.id,
       embedding: card.embedding,
@@ -169,7 +185,7 @@ export async function GET(request: Request) {
       stage: card.stage ?? 0,
     }));
 
-    // 6. スコアリングして次のカードを選択
+    // 7. スコアリングして次のカードを選択
     const selectedCards: typeof todayPool = [];
     const remainingCandidates = [...candidates];
 
@@ -177,7 +193,9 @@ export async function GET(request: Request) {
       const nextCard = selectNextCard(
         remainingCandidates,
         currentCard,
-        now
+        now,
+        weights,
+        keywordEmbedding
       );
 
       if (!nextCard) {
@@ -203,7 +221,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // 7. フロントエンド互換性のため、card_idフィールドを追加し、デフォルト値を設定
+    // 8. フロントエンド互換性のため、card_idフィールドを追加し、デフォルト値を設定
     const responseCards = selectedCards.map((card) => ({
       ...card,
       card_id: card.id, // 後方互換性のため
