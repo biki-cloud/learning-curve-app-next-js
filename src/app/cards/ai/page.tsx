@@ -94,26 +94,12 @@ export default function AICardPage() {
     []
   );
 
-  // AI結果が生成されたら、各カードの類似カードを検索
+  // AI結果が生成されたら、類似カードマップをリセット
   useEffect(() => {
     if (!aiResult) {
       setSimilarCardsMap(new Map());
-      return;
     }
-
-    if (aiResult.shouldSplit && aiResult.splitCards.length > 0) {
-      // 分割されたカードごとに類似カードを検索
-      aiResult.splitCards.forEach((card, index) => {
-        void searchSimilarCards(index, card.title, card.content);
-      });
-    } else {
-      // 単一カードの場合
-      const answer = aiResult.optimizedAnswer ?? aiResult.generatedAnswer ?? '';
-      if (answer) {
-        void searchSimilarCards(0, aiResult.optimizedQuestion, answer);
-      }
-    }
-  }, [aiResult, searchSimilarCards]);
+  }, [aiResult]);
 
   const fetchTags = async () => {
     try {
@@ -464,19 +450,39 @@ export default function AICardPage() {
                     </p>
                   </div>
 
-                  {/* 類似カード表示 */}
-                  {loadingSimilarCards.has(0) && (
-                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-4">
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        類似カードを検索中...
-                      </div>
-                    </div>
-                  )}
+                  {/* 類似カード検索ボタン */}
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const answer = aiResult.optimizedAnswer ?? aiResult.generatedAnswer ?? '';
+                        if (answer) {
+                          void searchSimilarCards(0, aiResult.optimizedQuestion, answer);
+                        }
+                      }}
+                      disabled={loadingSimilarCards.has(0)}
+                      className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {loadingSimilarCards.has(0) ? (
+                        <>
+                          <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          検索中...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                          類似カードを検索
+                        </>
+                      )}
+                    </button>
+                  </div>
 
+                  {/* 類似カード表示 */}
                   {similarCardsMap.get(0) && similarCardsMap.get(0)!.length > 0 && (
                     <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
                       <h4 className="text-sm font-semibold text-indigo-900 mb-2 flex items-center gap-2">
@@ -610,19 +616,36 @@ export default function AICardPage() {
                           </div>
                         </div>
 
-                        {/* 類似カード表示 */}
-                        {isLoading && (
-                          <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded-md">
-                            <div className="flex items-center gap-2 text-xs text-gray-600">
-                              <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                              </svg>
-                              類似カードを検索中...
-                            </div>
-                          </div>
-                        )}
+                        {/* 類似カード検索ボタン */}
+                        <div className="mt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void searchSimilarCards(index, card.title, card.content);
+                            }}
+                            disabled={isLoading}
+                            className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {isLoading ? (
+                              <>
+                                <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                検索中...
+                              </>
+                            ) : (
+                              <>
+                                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                類似カードを検索
+                              </>
+                            )}
+                          </button>
+                        </div>
 
+                        {/* 類似カード表示 */}
                         {similarCards && similarCards.length > 0 && (
                           <div className="mt-2 p-3 bg-indigo-50 border border-indigo-200 rounded-md">
                             <h5 className="text-xs font-semibold text-indigo-900 mb-2 flex items-center gap-1">

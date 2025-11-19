@@ -79,22 +79,17 @@ export default function NewCardPage() {
     }
   }, []);
 
-  // デバウンス用のタイマー（最適化: デバウンス時間を長くし、最小文字数制限を設ける）
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // 最小文字数制限: 質問と回答がそれぞれ10文字以上入力されてから検索
-      const questionTrimmed = question.trim();
-      const answerTrimmed = answer.trim();
+  // 手動で類似カードを検索
+  const handleSearchSimilarCards = () => {
+    const questionTrimmed = question.trim();
+    const answerTrimmed = answer.trim();
 
-      if (questionTrimmed.length >= 10 && answerTrimmed.length >= 10) {
-        void searchSimilarCards(questionTrimmed, answerTrimmed);
-      } else {
-        setSimilarCards([]);
-      }
-    }, 2000); // 2秒のデバウンス（APIコールを減らす）
-
-    return () => clearTimeout(timer);
-  }, [question, answer, searchSimilarCards]);
+    if (questionTrimmed.length >= 10 && answerTrimmed.length >= 10) {
+      void searchSimilarCards(questionTrimmed, answerTrimmed);
+    } else {
+      alert('質問と回答をそれぞれ10文字以上入力してください');
+    }
+  };
 
   const fetchTags = async () => {
     try {
@@ -361,6 +356,52 @@ useEffect(() => {
             </p>
           </div>
 
+          {/* 類似カード検索ボタン */}
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={handleSearchSimilarCards}
+              disabled={loadingSimilarCards || !question.trim() || !answer.trim()}
+              className="border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loadingSimilarCards ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  検索中...
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                  類似カードを検索
+                </>
+              )}
+            </button>
+            <p className="text-muted-foreground mt-2 text-xs">
+              重複を避けるため、作成前に類似カードを確認できます。
+            </p>
+          </div>
+
           {/* 類似カード表示 */}
           {similarCards.length > 0 && (
             <div className="bg-muted border-border mb-6 rounded-lg border p-4">
@@ -463,29 +504,6 @@ useEffect(() => {
                     </div>
                   );
                 })}
-              </div>
-            </div>
-          )}
-
-          {loadingSimilarCards && question.trim() && answer.trim() && (
-            <div className="bg-muted border-border mb-6 rounded-lg border p-4">
-              <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                類似カードを検索中...
               </div>
             </div>
           )}
