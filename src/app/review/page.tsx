@@ -32,7 +32,6 @@ export default function ReviewPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showLimitSelector, setShowLimitSelector] = useState(true);
   const [cardTransition, setCardTransition] = useState(false);
-  const [showKeyboardHints, setShowKeyboardHints] = useState(true);
   const [isNoCardsAtStart, setIsNoCardsAtStart] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [reviewLimit, setReviewLimit] = useState<number | null>(null);
@@ -184,43 +183,6 @@ export default function ReviewPage() {
     },
     [cards, currentIndex, router, fetchNextCard, reviewLimit]
   );
-
-  // キーボードショートカット
-  useEffect(() => {
-    if (showLimitSelector || loading || cards.length === 0) return;
-
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // スペースキーで答えを表示/非表示
-      if (e.key === ' ' && !submitting) {
-        e.preventDefault();
-        if (!showAnswer) {
-          setShowAnswer(true);
-        }
-      }
-      // 1, 2, 3で評価
-      if (showAnswer && !submitting && cards[currentIndex]) {
-        if (e.key === '1') {
-          void handleRating('again');
-        } else if (e.key === '2') {
-          void handleRating('hard');
-        } else if (e.key === '3') {
-          void handleRating('good');
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [
-    showAnswer,
-    submitting,
-    showLimitSelector,
-    loading,
-    cards.length,
-    currentIndex,
-    cards,
-    handleRating,
-  ]);
 
   const checkAuth = async () => {
     const {
@@ -465,14 +427,6 @@ export default function ReviewPage() {
               {currentIndex + 1} / {cards.length} (残り {remaining} 枚)
             </div>
           </div>
-          {showKeyboardHints && (
-            <button
-              onClick={() => setShowKeyboardHints(false)}
-              className="bg-background hover:bg-accent hover:text-accent-foreground rounded-md border px-3 py-1.5 text-xs font-medium transition-colors"
-            >
-              ⌨️ キーボードショートカット
-            </button>
-          )}
         </div>
 
         {/* プログレスバー */}
@@ -484,27 +438,6 @@ export default function ReviewPage() {
             />
           </div>
         </div>
-
-        {/* キーボードショートカットヒント */}
-        {showKeyboardHints && (
-          <div className="bg-muted mb-6 rounded-lg border p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="mb-2 text-sm font-semibold">⌨️ キーボードショートカット</div>
-                <div className="text-muted-foreground space-y-1 text-xs">
-                  <div>スペースキー: 答えを表示</div>
-                  <div>1: Again | 2: Hard | 3: Good</div>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowKeyboardHints(false)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* カード表示 */}
         <div
@@ -545,10 +478,7 @@ export default function ReviewPage() {
               onClick={() => setShowAnswer(true)}
               className="bg-primary text-primary-foreground hover:bg-primary/90 mt-8 w-full rounded-md px-6 py-3 text-base font-medium transition-colors"
             >
-              <span className="flex items-center justify-center gap-2">
-                <span>答えを見る</span>
-                <span className="text-sm opacity-75">(スペースキー)</span>
-              </span>
+              答えを見る
             </button>
           ) : (
             <div className="mt-8 space-y-4">
@@ -563,7 +493,6 @@ export default function ReviewPage() {
                 >
                   <div className="mb-1 text-xl">❌</div>
                   <div className="font-semibold">Again</div>
-                  <div className="mt-1 text-xs opacity-75">(1)</div>
                 </button>
                 <button
                   onClick={() => handleRating('hard')}
@@ -572,7 +501,6 @@ export default function ReviewPage() {
                 >
                   <div className="mb-1 text-xl">🤔</div>
                   <div className="font-semibold">Hard</div>
-                  <div className="mt-1 text-xs opacity-75">(2)</div>
                 </button>
                 <button
                   onClick={() => handleRating('good')}
@@ -581,7 +509,6 @@ export default function ReviewPage() {
                 >
                   <div className="mb-1 text-xl">✅</div>
                   <div className="font-semibold">Good</div>
-                  <div className="mt-1 text-xs opacity-75">(3)</div>
                 </button>
               </div>
               {submitting && (
