@@ -4,6 +4,8 @@
 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface MarkdownRendererProps {
   content: string;
@@ -19,12 +21,24 @@ export default function MarkdownRenderer({ content, className = '' }: MarkdownRe
           // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment
           code({ node: _node, inline, className: codeClassName, children, ...props }: any) {
             const match = /language-(\w+)/.exec((codeClassName as string) || '');
+            const language = match ? match[1] : '';
+            
             return !inline && match ? (
-              <pre className="mb-4 p-4 bg-gray-900 text-gray-100 rounded-md overflow-x-auto">
-                <code className={`text-sm font-mono ${codeClassName || ''}`} {...props}>
-                  {children}
-                </code>
-              </pre>
+              <div className="mb-4 rounded-md overflow-hidden">
+                <SyntaxHighlighter
+                  language={language}
+                  style={vscDarkPlus}
+                  customStyle={{
+                    margin: 0,
+                    padding: '1rem',
+                    fontSize: '0.875rem',
+                    lineHeight: '1.5',
+                  }}
+                  {...props}
+                >
+                  {String(children).replace(/\n$/, '')}
+                </SyntaxHighlighter>
+              </div>
             ) : (
               <code className="px-1.5 py-0.5 bg-gray-100 rounded text-sm font-mono text-indigo-600" {...props}>
                 {children}
