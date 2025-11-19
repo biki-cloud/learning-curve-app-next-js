@@ -35,6 +35,7 @@ export default function ReviewPage() {
   const [showKeyboardHints, setShowKeyboardHints] = useState(true);
   const [isNoCardsAtStart, setIsNoCardsAtStart] = useState(false);
   const [keyword, setKeyword] = useState('');
+  const [reviewLimit, setReviewLimit] = useState<number | null>(null);
 
   useEffect(() => {
     void checkAuth();
@@ -64,7 +65,7 @@ export default function ReviewPage() {
           params.append('excludeIds', reviewedIds.join(','));
         }
         // キーワードが設定されている場合は追加
-        if (keyword && keyword.trim()) {
+        if (keyword?.trim()) {
           params.append('keyword', keyword.trim());
         }
 
@@ -141,6 +142,16 @@ export default function ReviewPage() {
           // アニメーションのための短い遅延
           await new Promise((resolve) => setTimeout(resolve, 300));
 
+          // 完了したカード数を計算（currentIndex + 1）
+          const completedCount = currentIndex + 1;
+
+          // 指定枚数に達した場合は終了
+          if (reviewLimit !== null && completedCount >= reviewLimit) {
+            setCards([]);
+            setCardTransition(false);
+            return;
+          }
+
           // 次のカードへ
           if (currentIndex < cards.length - 1) {
             setCurrentIndex(currentIndex + 1);
@@ -171,7 +182,7 @@ export default function ReviewPage() {
         setSubmitting(false);
       }
     },
-    [cards, currentIndex, router, fetchNextCard]
+    [cards, currentIndex, router, fetchNextCard, reviewLimit]
   );
 
   // キーボードショートカット
@@ -240,7 +251,7 @@ export default function ReviewPage() {
       // URLパラメータを構築
       const params = new URLSearchParams();
       params.append('limit', limit.toString());
-      if (keyword && keyword.trim()) {
+      if (keyword?.trim()) {
         params.append('keyword', keyword.trim());
       }
 
@@ -269,6 +280,7 @@ export default function ReviewPage() {
         }
 
         setCards(uniqueData);
+        setReviewLimit(limit); // 指定枚数を保存
         if (uniqueData.length === 0) {
           setIsNoCardsAtStart(true);
           setShowLimitSelector(false);

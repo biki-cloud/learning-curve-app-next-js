@@ -165,7 +165,7 @@ export async function GET(request: Request) {
     let keywordEmbedding: number[] | null = null;
     let weights = DEFAULT_WEIGHTS;
     
-    if (keyword && keyword.trim()) {
+    if (keyword?.trim()) {
       try {
         keywordEmbedding = await generateEmbedding(keyword.trim());
         weights = KEYWORD_PRIORITY_WEIGHTS; // キーワード優先モードに切り替え
