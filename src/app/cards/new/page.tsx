@@ -2,11 +2,22 @@
 
 // カード作成画面
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/navbar';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
+
+interface SimilarCard {
+  id: number;
+  question: string;
+  answer: string;
+  category: string | null;
+  difficulty: number | null;
+  tags: string | null;
+  similarityScore: number;
+}
 
 export default function NewCardPage() {
   const router = useRouter();
@@ -18,10 +29,72 @@ export default function NewCardPage() {
   const [loading, setLoading] = useState(false);
   const [loadingTags, setLoadingTags] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
+  const [similarCards, setSimilarCards] = useState<SimilarCard[]>([]);
+  const [loadingSimilarCards, setLoadingSimilarCards] = useState(false);
+  const [expandedSimilarCardIds, setExpandedSimilarCardIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     void fetchTags();
   }, []);
+
+  // 類似カードを検索（デバウンス付き）
+  const searchSimilarCards = useCallback(async (questionText: string, answerText: string) => {
+    if (!questionText.trim() || !answerText.trim()) {
+      setSimilarCards([]);
+      return;
+    }
+
+    setLoadingSimilarCards(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        return;
+      }
+
+      const response = await fetch('/api/cards/similar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          question: questionText,
+          answer: answerText,
+          limit: 5,
+        }),
+      });
+
+      if (response.ok) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        const data = (await response.json()) as SimilarCard[];
+        setSimilarCards(data);
+      }
+    } catch (error) {
+      console.error('Error searching similar cards:', error);
+    } finally {
+      setLoadingSimilarCards(false);
+    }
+  }, []);
+
+  // デバウンス用のタイマー（最適化: デバウンス時間を長くし、最小文字数制限を設ける）
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // 最小文字数制限: 質問と回答がそれぞれ10文字以上入力されてから検索
+      const questionTrimmed = question.trim();
+      const answerTrimmed = answer.trim();
+
+      if (questionTrimmed.length >= 10 && answerTrimmed.length >= 10) {
+        void searchSimilarCards(questionTrimmed, answerTrimmed);
+      } else {
+        setSimilarCards([]);
+      }
+    }, 2000); // 2秒のデバウンス（APIコールを減らす）
+
+    return () => clearTimeout(timer);
+  }, [question, answer, searchSimilarCards]);
 
   const fetchTags = async () => {
     try {
@@ -41,7 +114,7 @@ export default function NewCardPage() {
 
       if (response.ok) {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-        const data = await response.json() as { tags?: string[] };
+        const data = (await response.json()) as { tags?: string[] };
         setAvailableTags(data.tags ?? []);
       }
     } catch (error) {
@@ -103,7 +176,7 @@ export default function NewCardPage() {
         router.push('/cards');
       } else {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-        const error = await response.json() as { error?: string };
+        const error = (await response.json()) as { error?: string };
         alert(`エラー: ${error.error ?? 'Unknown error'}`);
       }
     } catch (error) {
@@ -115,66 +188,66 @@ export default function NewCardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       <Navbar currentPath="/cards" />
-      <main className="container mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8 max-w-3xl">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-foreground">カード作成</h2>
-            <button
-              type="button"
-              onClick={() => setShowGuide(!showGuide)}
-              className="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-2 self-start sm:self-auto"
+      <main className="container mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+        <div className="mb-4 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-foreground text-xl font-bold sm:text-2xl">カード作成</h2>
+          <button
+            type="button"
+            onClick={() => setShowGuide(!showGuide)}
+            className="text-primary hover:text-primary/80 flex items-center gap-2 self-start text-sm font-medium sm:self-auto"
+          >
+            <svg
+              className={`h-5 w-5 transition-transform ${showGuide ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <svg
-                className={`w-5 h-5 transition-transform ${showGuide ? 'rotate-180' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-              {showGuide ? 'ガイドを隠す' : 'カード作成のガイドを見る'}
-            </button>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+            {showGuide ? 'ガイドを隠す' : 'カード作成のガイドを見る'}
+          </button>
         </div>
 
         {/* ガイドセクション */}
         {showGuide && (
-          <div className="bg-muted border border-border rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
-            <h3 className="text-base sm:text-lg font-semibold text-foreground mb-4">
+          <div className="bg-muted border-border mb-4 rounded-lg border p-4 sm:mb-6 sm:p-6">
+            <h3 className="text-foreground mb-4 text-base font-semibold sm:text-lg">
               カード作成のベストプラクティス
             </h3>
 
             {/* カードの粒度について */}
             <div className="mb-4 sm:mb-6">
-              <h4 className="font-medium text-foreground mb-2 text-sm sm:text-base">
+              <h4 className="text-foreground mb-2 text-sm font-medium sm:text-base">
                 📏 カードの粒度：1つの概念に1つのカード
               </h4>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-3">
+              <p className="text-muted-foreground mb-3 text-xs sm:text-sm">
                 1つのカードには、1つの明確な概念や事実だけを含めましょう。複数の概念を1つのカードに詰め込むと、記憶が定着しにくくなります。
               </p>
-              <div className="bg-background rounded-md p-3 sm:p-4 space-y-3 sm:space-y-4">
+              <div className="bg-background space-y-3 rounded-md p-3 sm:space-y-4 sm:p-4">
                 <div>
-                  <p className="text-xs font-medium text-destructive mb-2">❌ 悪い例：複数の概念</p>
-                  <div className="text-xs text-muted-foreground bg-destructive/10 p-2 sm:p-3 rounded border border-destructive/20">
-                    <p className="font-medium mb-1">質問：</p>
+                  <p className="text-destructive mb-2 text-xs font-medium">❌ 悪い例：複数の概念</p>
+                  <div className="text-muted-foreground bg-destructive/10 border-destructive/20 rounded border p-2 text-xs sm:p-3">
+                    <p className="mb-1 font-medium">質問：</p>
                     <p>ReactのHooksについて説明してください</p>
-                    <p className="font-medium mt-2 mb-1">回答：</p>
+                    <p className="mb-1 mt-2 font-medium">回答：</p>
                     <p>
                       useStateは状態管理、useEffectは副作用処理、useContextはコンテキスト取得、useMemoはメモ化...
                     </p>
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-primary mb-2">✅ 良い例：1つの概念</p>
-                  <div className="text-xs text-muted-foreground bg-primary/10 p-2 sm:p-3 rounded border border-primary/20">
-                    <p className="font-medium mb-1">質問：</p>
+                  <p className="text-primary mb-2 text-xs font-medium">✅ 良い例：1つの概念</p>
+                  <div className="text-muted-foreground bg-primary/10 border-primary/20 rounded border p-2 text-xs sm:p-3">
+                    <p className="mb-1 font-medium">質問：</p>
                     <p>ReactのuseStateは何？</p>
-                    <p className="font-medium mt-2 mb-1">回答：</p>
+                    <p className="mb-1 mt-2 font-medium">回答：</p>
                     <p>
                       関数コンポーネントで状態を管理するためのHook。配列の分割代入で現在の値と更新関数を取得する。
                     </p>
@@ -185,31 +258,30 @@ export default function NewCardPage() {
 
             {/* 良いカードの例 */}
             <div className="mb-6">
-              <h4 className="font-medium text-gray-900 mb-3">
-                💡 良いカードの例
-              </h4>
+              <h4 className="mb-3 font-medium text-gray-900">💡 良いカードの例</h4>
               <div className="space-y-3">
-                <div className="bg-white rounded-md p-4 border border-gray-200">
-                  <p className="text-xs font-medium text-gray-700 mb-2">プログラミング</p>
-                  <p className="text-xs text-gray-600 mb-1">
+                <div className="rounded-md border border-gray-200 bg-white p-4">
+                  <p className="mb-2 text-xs font-medium text-gray-700">プログラミング</p>
+                  <p className="mb-1 text-xs text-gray-600">
                     <span className="font-medium">質問：</span> JavaScriptのクロージャとは？
                   </p>
                   <p className="text-xs text-gray-600">
-                    <span className="font-medium">回答：</span> 関数とその関数が定義されたスコープの変数を束縛したもの。内側の関数が外側の変数にアクセスできる。
+                    <span className="font-medium">回答：</span>{' '}
+                    関数とその関数が定義されたスコープの変数を束縛したもの。内側の関数が外側の変数にアクセスできる。
                   </p>
                 </div>
-                <div className="bg-white rounded-md p-4 border border-gray-200">
-                  <p className="text-xs font-medium text-gray-700 mb-2">言語学習</p>
-                  <p className="text-xs text-gray-600 mb-1">
+                <div className="rounded-md border border-gray-200 bg-white p-4">
+                  <p className="mb-2 text-xs font-medium text-gray-700">言語学習</p>
+                  <p className="mb-1 text-xs text-gray-600">
                     <span className="font-medium">質問：</span> 「ありがとう」を英語で？
                   </p>
                   <p className="text-xs text-gray-600">
                     <span className="font-medium">回答：</span> Thank you / Thanks
                   </p>
                 </div>
-                <div className="bg-white rounded-md p-4 border border-gray-200">
-                  <p className="text-xs font-medium text-gray-700 mb-2">一般知識</p>
-                  <p className="text-xs text-gray-600 mb-1">
+                <div className="rounded-md border border-gray-200 bg-white p-4">
+                  <p className="mb-2 text-xs font-medium text-gray-700">一般知識</p>
+                  <p className="mb-1 text-xs text-gray-600">
                     <span className="font-medium">質問：</span> 光合成の化学反応式は？
                   </p>
                   <p className="text-xs text-gray-600">
@@ -221,10 +293,8 @@ export default function NewCardPage() {
 
             {/* 質問の書き方 */}
             <div className="mb-6">
-              <h4 className="font-medium text-gray-900 mb-2">
-                ✍️ 質問の書き方
-              </h4>
-              <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+              <h4 className="mb-2 font-medium text-gray-900">✍️ 質問の書き方</h4>
+              <ul className="list-inside list-disc space-y-1 text-sm text-gray-700">
                 <li>明確で具体的な質問にする</li>
                 <li>「〜とは？」「〜は何？」「〜の違いは？」など、答えやすい形式にする</li>
                 <li>文脈がなくても理解できるようにする</li>
@@ -233,10 +303,8 @@ export default function NewCardPage() {
 
             {/* 回答の書き方 */}
             <div className="mb-4">
-              <h4 className="font-medium text-gray-900 mb-2">
-                📝 回答の書き方
-              </h4>
-              <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+              <h4 className="mb-2 font-medium text-gray-900">📝 回答の書き方</h4>
+              <ul className="list-inside list-disc space-y-1 text-sm text-gray-700">
                 <li>簡潔に、要点を押さえる（長すぎると覚えにくい）</li>
                 <li>Markdownを使って構造化する（コードブロック、リストなど）</li>
                 <li>具体例を含めると記憶に残りやすい</li>
@@ -246,9 +314,12 @@ export default function NewCardPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-card text-card-foreground shadow-sm rounded-lg border p-4 sm:p-6">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-card text-card-foreground rounded-lg border p-4 shadow-sm sm:p-6"
+        >
           <div className="mb-4">
-            <label htmlFor="question" className="block text-sm font-medium text-foreground mb-2">
+            <label htmlFor="question" className="text-foreground mb-2 block text-sm font-medium">
               質問 / タイトル <span className="text-destructive">*</span>
             </label>
             <textarea
@@ -257,15 +328,15 @@ export default function NewCardPage() {
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               rows={3}
-              className="flex h-auto w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-auto w-full resize-y rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               placeholder="例: ReactのuseEffectは何？"
             />
           </div>
 
           <div className="mb-4">
-            <label htmlFor="answer" className="block text-sm font-medium text-foreground mb-2">
+            <label htmlFor="answer" className="text-foreground mb-2 block text-sm font-medium">
               回答 <span className="text-destructive">*</span>
-              <span className="ml-2 text-xs text-muted-foreground">(Markdown対応)</span>
+              <span className="text-muted-foreground ml-2 text-xs">(Markdown対応)</span>
             </label>
             <textarea
               id="answer"
@@ -273,7 +344,7 @@ export default function NewCardPage() {
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               rows={12}
-              className="flex h-auto w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+              className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-auto w-full resize-y rounded-md border px-3 py-2 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               placeholder={`例: 副作用処理を行うHooks
 
 \`\`\`javascript
@@ -285,15 +356,142 @@ useEffect(() => {
 - 第一引数: 実行する関数
 - 第二引数: 依存配列`}
             />
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-1 text-xs">
               Markdown形式で記述できます。コードブロック、リスト、リンクなどが使用可能です。
             </p>
           </div>
 
+          {/* 類似カード表示 */}
+          {similarCards.length > 0 && (
+            <div className="bg-muted border-border mb-6 rounded-lg border p-4">
+              <h3 className="text-foreground mb-3 flex items-center gap-2 text-sm font-semibold">
+                <svg
+                  className="text-primary h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+                類似カードが見つかりました
+              </h3>
+              <p className="text-muted-foreground mb-3 text-xs">
+                重複を避けたり、関連する知識を確認したりできます。
+              </p>
+              <div className="space-y-3">
+                {similarCards.map((card) => {
+                  const isExpanded = expandedSimilarCardIds.has(card.id);
+                  return (
+                    <div
+                      key={card.id}
+                      className="bg-background border-border hover:border-primary rounded-md border p-3 transition-colors"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExpandedSimilarCardIds((prev) => {
+                            const newSet = new Set(prev);
+                            if (newSet.has(card.id)) {
+                              newSet.delete(card.id);
+                            } else {
+                              newSet.add(card.id);
+                            }
+                            return newSet;
+                          });
+                        }}
+                        className="w-full text-left"
+                      >
+                        <div className="mb-2 flex items-start justify-between gap-2">
+                          <h4 className="text-foreground flex-1 text-sm font-medium">
+                            {card.question}
+                          </h4>
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground whitespace-nowrap text-xs">
+                              {Math.round(card.similarityScore * 100)}% 類似
+                            </span>
+                            <svg
+                              className={`text-muted-foreground h-4 w-4 transition-transform ${
+                                isExpanded ? 'rotate-180' : ''
+                              }`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 9l-7 7-7-7"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      </button>
+                      {isExpanded && (
+                        <div className="border-border mt-3 border-t pt-3">
+                          <div className="text-muted-foreground mb-2 text-xs">
+                            <MarkdownRenderer content={card.answer} />
+                          </div>
+                          {card.tags && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {card.tags.split(',').map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="bg-secondary text-secondary-foreground inline-flex items-center rounded px-2 py-0.5 text-xs font-medium"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="mt-3">
+                            <Link
+                              href={`/cards/${card.id}/edit`}
+                              className="text-primary hover:text-primary/80 text-xs font-medium"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              編集ページを開く →
+                            </Link>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {loadingSimilarCards && question.trim() && answer.trim() && (
+            <div className="bg-muted border-border mb-6 rounded-lg border p-4">
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                類似カードを検索中...
+              </div>
+            </div>
+          )}
+
           <div className="mb-6">
-            <label className="block text-sm font-medium text-foreground mb-2">
-              タグ
-            </label>
+            <label className="text-foreground mb-2 block text-sm font-medium">タグ</label>
 
             {/* 選択されたタグの表示 */}
             {selectedTags.length > 0 && (
@@ -301,16 +499,15 @@ useEffect(() => {
                 {selectedTags.map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-secondary text-secondary-foreground"
+                    className="bg-secondary text-secondary-foreground inline-flex items-center rounded-full px-3 py-1 text-sm font-medium"
                   >
                     {tag}
                     <button
                       type="button"
                       onClick={() => handleRemoveTag(tag)}
-                      className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-secondary/80 focus:outline-none"
+                      className="hover:bg-secondary/80 ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full focus:outline-none"
                     >
-                      <span className="sr-only">削除</span>
-                      ×
+                      <span className="sr-only">削除</span>×
                     </button>
                   </span>
                 ))}
@@ -320,14 +517,14 @@ useEffect(() => {
             {/* 既存のタグから選択 */}
             {!loadingTags && availableTags.length > 0 && (
               <div className="mb-3">
-                <p className="text-xs text-muted-foreground mb-2">既存のタグから選択:</p>
+                <p className="text-muted-foreground mb-2 text-xs">既存のタグから選択:</p>
                 <div className="flex flex-wrap gap-2">
                   {availableTags.map((tag) => (
                     <button
                       key={tag}
                       type="button"
                       onClick={() => handleTagToggle(tag)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                      className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
                         selectedTags.includes(tag)
                           ? 'bg-primary text-primary-foreground border-primary'
                           : 'bg-background text-foreground border-input hover:bg-accent hover:text-accent-foreground'
@@ -341,7 +538,7 @@ useEffect(() => {
             )}
 
             {/* 新しいタグを追加 */}
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 type="text"
                 value={newTag}
@@ -352,30 +549,30 @@ useEffect(() => {
                     handleAddNewTag();
                   }
                 }}
-                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex-1 rounded-md border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="新しいタグを入力してEnter"
               />
               <button
                 type="button"
                 onClick={handleAddNewTag}
-                className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                className="border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md border px-4 py-2 text-sm font-medium transition-colors"
               >
                 追加
               </button>
             </div>
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4">
+          <div className="flex flex-col-reverse justify-end gap-3 sm:flex-row sm:gap-4">
             <Link
               href="/cards"
-              className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+              className="border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors"
             >
               キャンセル
             </Link>
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? '作成中...' : '作成'}
             </button>
@@ -385,4 +582,3 @@ useEffect(() => {
     </div>
   );
 }
-

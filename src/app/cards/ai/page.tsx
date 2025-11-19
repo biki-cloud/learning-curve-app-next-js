@@ -2,12 +2,22 @@
 
 // AI自動カード作成画面
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import Navbar from '@/components/navbar';
+
+interface SimilarCard {
+  id: number;
+  question: string;
+  answer: string;
+  category: string | null;
+  difficulty: number | null;
+  tags: string | null;
+  similarityScore: number;
+}
 
 export default function AICardPage() {
   const router = useRouter();
@@ -27,10 +37,83 @@ export default function AICardPage() {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [loadingTags, setLoadingTags] = useState(true);
+  const [similarCardsMap, setSimilarCardsMap] = useState<Map<number, SimilarCard[]>>(new Map());
+  const [loadingSimilarCards, setLoadingSimilarCards] = useState<Set<number>>(new Set());
+  const [expandedSimilarCardIds, setExpandedSimilarCardIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     void fetchTags();
   }, []);
+
+  // 類似カードを検索
+  const searchSimilarCards = useCallback(
+    async (cardIndex: number, questionText: string, answerText: string) => {
+      setLoadingSimilarCards((prev) => new Set(prev).add(cardIndex));
+
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session) {
+          return;
+        }
+
+        const response = await fetch('/api/cards/similar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            question: questionText,
+            answer: answerText,
+            limit: 3,
+          }),
+        });
+
+        if (response.ok) {
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+          const data = (await response.json()) as SimilarCard[];
+          setSimilarCardsMap((prev) => {
+            const newMap = new Map(prev);
+            newMap.set(cardIndex, data);
+            return newMap;
+          });
+        }
+      } catch (error) {
+        console.error('Error searching similar cards:', error);
+      } finally {
+        setLoadingSimilarCards((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(cardIndex);
+          return newSet;
+        });
+      }
+    },
+    []
+  );
+
+  // AI結果が生成されたら、各カードの類似カードを検索
+  useEffect(() => {
+    if (!aiResult) {
+      setSimilarCardsMap(new Map());
+      return;
+    }
+
+    if (aiResult.shouldSplit && aiResult.splitCards.length > 0) {
+      // 分割されたカードごとに類似カードを検索
+      aiResult.splitCards.forEach((card, index) => {
+        void searchSimilarCards(index, card.title, card.content);
+      });
+    } else {
+      // 単一カードの場合
+      const answer = aiResult.optimizedAnswer ?? aiResult.generatedAnswer ?? '';
+      if (answer) {
+        void searchSimilarCards(0, aiResult.optimizedQuestion, answer);
+      }
+    }
+  }, [aiResult, searchSimilarCards]);
 
   const fetchTags = async () => {
     try {
@@ -366,55 +449,272 @@ export default function AICardPage() {
 
               {/* 分割されていない場合（単一カード） */}
               {!aiResult.shouldSplit && (
-                <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">
-                    {aiResult.optimizedQuestion}
-                  </h4>
-                  <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                    <MarkdownRenderer
-                      content={aiResult.optimizedAnswer ?? aiResult.generatedAnswer ?? ''}
-                    />
+                <div className="mb-4">
+                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg mb-4">
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">
+                      {aiResult.optimizedQuestion}
+                    </h4>
+                    <div className="text-sm text-gray-700 prose prose-sm max-w-none">
+                      <MarkdownRenderer
+                        content={aiResult.optimizedAnswer ?? aiResult.generatedAnswer ?? ''}
+                      />
+                    </div>
+                    <p className="mt-3 text-xs text-gray-500">
+                      💡 このカードは分割されていません。必要に応じて手動で編集・保存してください。
+                    </p>
                   </div>
-                  <p className="mt-3 text-xs text-gray-500">
-                    💡 このカードは分割されていません。必要に応じて手動で編集・保存してください。
-                  </p>
+
+                  {/* 類似カード表示 */}
+                  {loadingSimilarCards.has(0) && (
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-4">
+                      <div className="flex items-center gap-2 text-xs text-gray-600">
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        類似カードを検索中...
+                      </div>
+                    </div>
+                  )}
+
+                  {similarCardsMap.get(0) && similarCardsMap.get(0)!.length > 0 && (
+                    <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                      <h4 className="text-sm font-semibold text-indigo-900 mb-2 flex items-center gap-2">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        類似カードが見つかりました
+                      </h4>
+                      <p className="text-xs text-indigo-700 mb-3">
+                        重複を避けたり、関連する知識を確認したりできます。
+                      </p>
+                      <div className="space-y-2">
+                        {similarCardsMap.get(0)!.map((card) => {
+                          const isExpanded = expandedSimilarCardIds.has(card.id);
+                          return (
+                            <div
+                              key={card.id}
+                              className="bg-white border border-indigo-200 rounded-md hover:border-indigo-400 transition-colors"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setExpandedSimilarCardIds((prev) => {
+                                    const newSet = new Set(prev);
+                                    if (newSet.has(card.id)) {
+                                      newSet.delete(card.id);
+                                    } else {
+                                      newSet.add(card.id);
+                                    }
+                                    return newSet;
+                                  });
+                                }}
+                                className="w-full text-left p-2"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <h5 className="text-xs font-medium text-gray-900 flex-1">{card.question}</h5>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-indigo-600 whitespace-nowrap">
+                                      {Math.round(card.similarityScore * 100)}% 類似
+                                    </span>
+                                    <svg
+                                      className={`w-3 h-3 text-indigo-600 transition-transform ${
+                                        isExpanded ? 'rotate-180' : ''
+                                      }`}
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 9l-7 7-7-7"
+                                      />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </button>
+                              {isExpanded && (
+                                <div className="px-2 pb-2 border-t border-indigo-200">
+                                  <div className="pt-2 text-xs text-gray-700">
+                                    <MarkdownRenderer content={card.answer} />
+                                  </div>
+                                  {card.tags && (
+                                    <div className="mt-2 flex flex-wrap gap-1">
+                                      {card.tags.split(',').map((tag) => (
+                                        <span
+                                          key={tag}
+                                          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800"
+                                        >
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <div className="mt-2">
+                                    <Link
+                                      href={`/cards/${card.id}/edit`}
+                                      className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      編集ページを開く →
+                                    </Link>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* 分割されたカード一覧 */}
               {aiResult.shouldSplit && aiResult.splitCards.length > 0 && (
                 <div className="space-y-4">
-                  {aiResult.splitCards.map((card, index) => (
-                    <div
-                      key={index}
-                      className={`p-4 border rounded-lg transition-colors ${
-                        selectedCards.has(index)
-                          ? 'border-indigo-500 bg-indigo-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          id={`card-${index}`}
-                          checked={selectedCards.has(index)}
-                          onChange={() => handleToggleCard(index)}
-                          className="mt-1 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                        />
-                        <div className="flex-1">
-                          <label
-                            htmlFor={`card-${index}`}
-                            className="block text-sm font-medium text-gray-900 cursor-pointer mb-2"
-                          >
-                            {card.title}
-                          </label>
-                          <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                            <MarkdownRenderer content={card.content} />
+                  {aiResult.splitCards.map((card, index) => {
+                    const similarCards = similarCardsMap.get(index);
+                    const isLoading = loadingSimilarCards.has(index);
+
+                    return (
+                      <div key={index}>
+                        <div
+                          className={`p-4 border rounded-lg transition-colors ${
+                            selectedCards.has(index)
+                              ? 'border-indigo-500 bg-indigo-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="checkbox"
+                              id={`card-${index}`}
+                              checked={selectedCards.has(index)}
+                              onChange={() => handleToggleCard(index)}
+                              className="mt-1 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            />
+                            <div className="flex-1">
+                              <label
+                                htmlFor={`card-${index}`}
+                                className="block text-sm font-medium text-gray-900 cursor-pointer mb-2"
+                              >
+                                {card.title}
+                              </label>
+                              <div className="text-sm text-gray-700 prose prose-sm max-w-none">
+                                <MarkdownRenderer content={card.content} />
+                              </div>
+                            </div>
                           </div>
                         </div>
+
+                        {/* 類似カード表示 */}
+                        {isLoading && (
+                          <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded-md">
+                            <div className="flex items-center gap-2 text-xs text-gray-600">
+                              <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                              </svg>
+                              類似カードを検索中...
+                            </div>
+                          </div>
+                        )}
+
+                        {similarCards && similarCards.length > 0 && (
+                          <div className="mt-2 p-3 bg-indigo-50 border border-indigo-200 rounded-md">
+                            <h5 className="text-xs font-semibold text-indigo-900 mb-2 flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              類似カード ({similarCards.length}件)
+                            </h5>
+                            <div className="space-y-1.5">
+                              {similarCards.map((similarCard) => {
+                                const isExpanded = expandedSimilarCardIds.has(similarCard.id);
+                                return (
+                                  <div
+                                    key={similarCard.id}
+                                    className="bg-white border border-indigo-200 rounded hover:border-indigo-400 transition-colors"
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setExpandedSimilarCardIds((prev) => {
+                                          const newSet = new Set(prev);
+                                          if (newSet.has(similarCard.id)) {
+                                            newSet.delete(similarCard.id);
+                                          } else {
+                                            newSet.add(similarCard.id);
+                                          }
+                                          return newSet;
+                                        });
+                                      }}
+                                      className="w-full text-left p-2"
+                                    >
+                                      <div className="flex items-start justify-between gap-2">
+                                        <span className="text-xs font-medium text-gray-900 flex-1">{similarCard.question}</span>
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-xs text-indigo-600 whitespace-nowrap">
+                                            {Math.round(similarCard.similarityScore * 100)}%
+                                          </span>
+                                          <svg
+                                            className={`w-3 h-3 text-indigo-600 transition-transform ${
+                                              isExpanded ? 'rotate-180' : ''
+                                            }`}
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth={2}
+                                              d="M19 9l-7 7-7-7"
+                                            />
+                                          </svg>
+                                        </div>
+                                      </div>
+                                    </button>
+                                    {isExpanded && (
+                                      <div className="px-2 pb-2 border-t border-indigo-200">
+                                        <div className="pt-2 text-xs text-gray-700">
+                                          <MarkdownRenderer content={similarCard.answer} />
+                                        </div>
+                                        {similarCard.tags && (
+                                          <div className="mt-2 flex flex-wrap gap-1">
+                                            {similarCard.tags.split(',').map((tag) => (
+                                              <span
+                                                key={tag}
+                                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800"
+                                              >
+                                                {tag}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+                                        <div className="mt-2">
+                                          <Link
+                                            href={`/cards/${similarCard.id}/edit`}
+                                            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            編集ページを開く →
+                                          </Link>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
