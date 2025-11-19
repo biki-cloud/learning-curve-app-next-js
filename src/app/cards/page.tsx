@@ -32,6 +32,8 @@ export default function CardsPage() {
   const [selectedTag, setSelectedTag] = useState('');
   const [reviewStatus, setReviewStatus] = useState('all');
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedCards, setSelectedCards] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     void checkAuth();
@@ -176,6 +178,78 @@ export default function CardsPage() {
     }
   };
 
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    setSelectedCards(new Set()); // 選択モードを切り替える際に選択をリセット
+  };
+
+  const toggleCardSelection = (cardId: number) => {
+    const newSelected = new Set(selectedCards);
+    if (newSelected.has(cardId)) {
+      newSelected.delete(cardId);
+    } else {
+      newSelected.add(cardId);
+    }
+    setSelectedCards(newSelected);
+  };
+
+  const selectAllCards = () => {
+    setSelectedCards(new Set(cards.map((card) => card.id)));
+  };
+
+  const deselectAllCards = () => {
+    setSelectedCards(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedCards.size === 0) {
+      return;
+    }
+
+    const count = selectedCards.size;
+    if (!confirm(`${count}枚のカードを削除しますか？`)) {
+      return;
+    }
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      // 選択されたカードを順番に削除
+      const deletePromises = Array.from(selectedCards).map((cardId) =>
+        fetch(`/api/cards/${cardId}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        })
+      );
+
+      const results = await Promise.allSettled(deletePromises);
+      const failed = results.filter((r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok));
+
+      if (failed.length > 0) {
+        alert(`${failed.length}枚のカードの削除に失敗しました`);
+      } else {
+        alert(`${count}枚のカードを削除しました`);
+      }
+
+      // 選択モードを終了し、一覧を再取得
+      setIsSelectionMode(false);
+      setSelectedCards(new Set());
+      void fetchCards(false);
+    } catch (error) {
+      console.error('Error deleting cards:', error);
+      alert('削除に失敗しました');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -194,21 +268,60 @@ export default function CardsPage() {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4 sm:mb-6">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">カード一覧</h2>
-            <p className="text-sm text-muted-foreground mt-1">{cards.length} 枚のカード</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {cards.length} 枚のカード
+              {isSelectionMode && selectedCards.size > 0 && (
+                <span className="ml-2 text-primary font-medium">
+                  ({selectedCards.size} 枚選択中)
+                </span>
+              )}
+            </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Link
-              href="/cards/ai"
-              className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-            >
-              ✨ AI自動作成
-            </Link>
-            <Link
-              href="/cards/new"
-              className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/90"
-            >
-              ➕ 新規作成
-            </Link>
+            {isSelectionMode ? (
+              <>
+                <button
+                  onClick={selectedCards.size === cards.length ? deselectAllCards : selectAllCards}
+                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  {selectedCards.size === cards.length ? '全解除' : '全選択'}
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={selectedCards.size === 0}
+                  className="inline-flex items-center justify-center rounded-md border border-destructive/50 bg-background px-4 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  削除 ({selectedCards.size})
+                </button>
+                <button
+                  onClick={toggleSelectionMode}
+                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  キャンセル
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={toggleSelectionMode}
+                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  ✓ 選択モード
+                </button>
+                <Link
+                  href="/cards/ai"
+                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  ✨ AI自動作成
+                </Link>
+                <Link
+                  href="/cards/new"
+                  className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/90"
+                >
+                  ➕ 新規作成
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -301,13 +414,26 @@ export default function CardsPage() {
           <div className="grid gap-4">
             {cards.map((card) => {
               const isExpanded = expandedCards.has(card.id);
+              const isSelected = selectedCards.has(card.id);
               return (
                 <div
                   key={card.id}
-                  className="rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow"
+                  className={`rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow ${
+                    isSelectionMode && isSelected ? 'ring-2 ring-primary' : ''
+                  }`}
                 >
                   <div className="p-4 sm:p-6">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                      {isSelectionMode && (
+                        <div className="flex items-start">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleCardSelection(card.id)}
+                            className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                          />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="text-base sm:text-lg font-semibold mb-3 leading-relaxed">
                           <MarkdownRenderer content={card.question} />
@@ -378,20 +504,22 @@ export default function CardsPage() {
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-2 sm:ml-4">
-                        <Link
-                          href={`/cards/${card.id}/edit`}
-                          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground flex-1 sm:flex-none"
-                        >
-                          編集
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(card.id)}
-                          className="inline-flex items-center justify-center rounded-md border border-destructive/50 bg-background px-3 py-1.5 text-xs sm:text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 flex-1 sm:flex-none"
-                        >
-                          削除
-                        </button>
-                      </div>
+                      {!isSelectionMode && (
+                        <div className="flex gap-2 sm:ml-4">
+                          <Link
+                            href={`/cards/${card.id}/edit`}
+                            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground flex-1 sm:flex-none"
+                          >
+                            編集
+                          </Link>
+                          <button
+                            onClick={() => handleDelete(card.id)}
+                            className="inline-flex items-center justify-center rounded-md border border-destructive/50 bg-background px-3 py-1.5 text-xs sm:text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 flex-1 sm:flex-none"
+                          >
+                            削除
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
