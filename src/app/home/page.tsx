@@ -77,94 +77,113 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar currentPath="/home" />
-      <main className="container mx-auto py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
+      <main className="container mx-auto py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
         {/* ウェルカムメッセージ */}
-        <div className="mb-6 sm:mb-10">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+        <div className="mb-8 sm:mb-12">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-foreground mb-2">
             ダッシュボード
           </h1>
-          <p className="text-muted-foreground text-base sm:text-lg">今日も学習を続けましょう ✨</p>
+          <p className="text-muted-foreground text-base sm:text-lg">今日も学習を続けましょう</p>
         </div>
 
         {/* 統計カード */}
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 mb-6 sm:mb-10">
-          <div className="group relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div className="relative p-6">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 mb-8 sm:mb-12">
+          {/* 今日のレビューカード */}
+          <div className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:shadow-md">
+            <div className="p-6 sm:p-8">
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-blue-500/10">
-                    <span className="text-2xl">📚</span>
-                  </div>
-                  <p className="text-sm font-medium text-muted-foreground">今日のレビュー</p>
-                </div>
+                <p className="text-sm font-medium text-muted-foreground">今日のレビュー</p>
+                <span className="text-2xl">📚</span>
               </div>
-              <p className="text-4xl font-bold mb-1">
-                {dashboardData?.today_review_count ?? 0}
-              </p>
-              <p className="text-sm text-muted-foreground">枚</p>
+              <div className="space-y-1">
+                <p className="text-4xl sm:text-5xl font-semibold text-foreground">
+                  {dashboardData?.today_review_count ?? 0}
+                </p>
+                <p className="text-sm text-muted-foreground">枚のカード</p>
+              </div>
+              {dashboardData && dashboardData.today_review_count > 0 && (
+                <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground"></span>
+                  レビュー待ち
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="group relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md hover:scale-[1.02]">
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div className="relative p-6">
+          {/* 全カード数カード */}
+          <div className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:shadow-md">
+            <div className="p-6 sm:p-8">
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-purple-500/10">
-                    <span className="text-2xl">🗂️</span>
-                  </div>
-                  <p className="text-sm font-medium text-muted-foreground">全カード数</p>
-                </div>
+                <p className="text-sm font-medium text-muted-foreground">全カード数</p>
+                <span className="text-2xl">🗂️</span>
               </div>
-              <p className="text-4xl font-bold mb-1">
-                {dashboardData?.total_cards ?? 0}
-              </p>
-              <p className="text-sm text-muted-foreground">枚</p>
+              <div className="space-y-1">
+                <p className="text-4xl sm:text-5xl font-semibold text-foreground">
+                  {dashboardData?.total_cards ?? 0}
+                </p>
+                <p className="text-sm text-muted-foreground">枚のカード</p>
+              </div>
+              {dashboardData && dashboardData.total_cards > 0 && (
+                <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground"></span>
+                  学習中
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* アクションボタン */}
-        <div className="mb-6 sm:mb-10">
-          <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">クイックアクション</h3>
+        <div className="mb-8 sm:mb-12">
+          <h3 className="text-lg sm:text-xl font-semibold mb-6 text-foreground">
+            クイックアクション
+          </h3>
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {/* レビュー開始 */}
             <Link
               href="/review"
-              className="group relative overflow-hidden rounded-xl border bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-sm transition-all hover:shadow-lg hover:scale-[1.02]"
+              className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:shadow-md hover:border-foreground/20"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="relative p-6 sm:p-8">
-                <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">🎯</div>
-                <div className="font-bold text-base sm:text-lg mb-2">レビュー開始</div>
-                <div className="text-xs sm:text-sm opacity-90">今日の復習を始める</div>
-                <div className="mt-3 sm:mt-4 text-xs opacity-75">→ 今すぐ始める</div>
+              <div className="p-6 sm:p-8">
+                <div className="text-3xl sm:text-4xl mb-3">🎯</div>
+                <div className="font-semibold text-base sm:text-lg mb-1">レビュー開始</div>
+                <div className="text-sm text-muted-foreground mb-4">今日の復習を始める</div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                  <span>今すぐ始める</span>
+                  <span>→</span>
+                </div>
               </div>
             </Link>
 
+            {/* AI自動作成 */}
             <Link
               href="/cards/ai"
-              className="group relative overflow-hidden rounded-xl border bg-gradient-to-br from-secondary to-secondary/80 text-secondary-foreground shadow-sm transition-all hover:shadow-lg hover:scale-[1.02]"
+              className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:shadow-md hover:border-foreground/20"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="relative p-6 sm:p-8">
-                <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">✨</div>
-                <div className="font-bold text-base sm:text-lg mb-2">AI自動作成</div>
-                <div className="text-xs sm:text-sm opacity-90">AIでカードを生成</div>
-                <div className="mt-3 sm:mt-4 text-xs opacity-75">→ AIに任せる</div>
+              <div className="p-6 sm:p-8">
+                <div className="text-3xl sm:text-4xl mb-3">✨</div>
+                <div className="font-semibold text-base sm:text-lg mb-1">AI自動作成</div>
+                <div className="text-sm text-muted-foreground mb-4">AIでカードを生成</div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                  <span>AIに任せる</span>
+                  <span>→</span>
+                </div>
               </div>
             </Link>
 
+            {/* カード作成 */}
             <Link
               href="/cards/new"
-              className="group relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-lg hover:scale-[1.02] hover:border-primary/20"
+              className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:shadow-md hover:border-foreground/20"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="relative p-6 sm:p-8">
-                <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">➕</div>
-                <div className="font-bold text-base sm:text-lg mb-2">カード作成</div>
-                <div className="text-xs sm:text-sm text-muted-foreground">新しいカードを追加</div>
-                <div className="mt-3 sm:mt-4 text-xs text-muted-foreground">→ 手動で作成</div>
+              <div className="p-6 sm:p-8">
+                <div className="text-3xl sm:text-4xl mb-3">➕</div>
+                <div className="font-semibold text-base sm:text-lg mb-1">カード作成</div>
+                <div className="text-sm text-muted-foreground mb-4">新しいカードを追加</div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                  <span>手動で作成</span>
+                  <span>→</span>
+                </div>
               </div>
             </Link>
           </div>
@@ -174,10 +193,11 @@ export default function HomePage() {
         <div className="text-center">
           <Link
             href="/cards"
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-input bg-background px-6 py-3 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-sm"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-background px-6 py-3 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground"
           >
-            <span className="text-lg">📋</span>
+            <span>📋</span>
             <span>カード一覧を見る</span>
+            <span>→</span>
           </Link>
         </div>
       </main>
