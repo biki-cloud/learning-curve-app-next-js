@@ -35,6 +35,18 @@ export default function ReviewPage() {
   const [isNoCardsAtStart, setIsNoCardsAtStart] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [reviewLimit, setReviewLimit] = useState<number | null>(null);
+  const [showSimilarModal, setShowSimilarModal] = useState(false);
+  const [similarCards, setSimilarCards] = useState<Array<{
+    id: number;
+    question: string;
+    answer: string;
+    category: string | null;
+    difficulty: number | null;
+    similarityScore: number;
+  }>>([]);
+  const [loadingSimilar, setLoadingSimilar] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     void checkAuth();
@@ -267,6 +279,88 @@ export default function ReviewPage() {
     setKeyword(e.target.value);
   };
 
+  const fetchSimilarCards = useCallback(async (cardId: number) => {
+    setLoadingSimilar(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        return;
+      }
+
+      const response = await fetch(`/api/cards/${cardId}/similar?limit=5`, {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSimilarCards(data);
+        setShowSimilarModal(true);
+      } else {
+        alert('類似カードの取得に失敗しました');
+      }
+    } catch (error) {
+      console.error('Error fetching similar cards:', error);
+      alert('エラーが発生しました');
+    } finally {
+      setLoadingSimilar(false);
+    }
+  }, []);
+
+  const handleDeleteCard = useCallback(async () => {
+    if (!cards[currentIndex]) return;
+
+    setDeleting(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      const cardId = cards[currentIndex].card_id;
+      const response = await fetch(`/api/cards/${cardId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.ok) {
+        // カードをリストから削除
+        const newCards = cards.filter((_, index) => index !== currentIndex);
+        
+        if (newCards.length === 0) {
+          // カードがなくなった場合
+          setCards([]);
+          setShowDeleteConfirm(false);
+          return;
+        }
+
+        // インデックスを調整
+        const newIndex = currentIndex >= newCards.length ? newCards.length - 1 : currentIndex;
+        setCards(newCards);
+        setCurrentIndex(newIndex);
+        setShowAnswer(false);
+        setShowDeleteConfirm(false);
+      } else {
+        alert('カードの削除に失敗しました');
+      }
+    } catch (error) {
+      console.error('Error deleting card:', error);
+      alert('エラーが発生しました');
+    } finally {
+      setDeleting(false);
+    }
+  }, [cards, currentIndex, router]);
+
   if (showLimitSelector && !loading) {
     return (
       <div className="bg-background min-h-screen">
@@ -450,6 +544,37 @@ export default function ReviewPage() {
           }`}
         >
           <div>
+            {/* アクションボタン */}
+            <div className="mb-4 flex justify-end gap-2">
+              <button
+                onClick={() => fetchSimilarCards(currentCard.card_id)}
+                disabled={loadingSimilar}
+                className="text-muted-foreground hover:text-foreground flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+                title="類似カードを検索"
+              >
+                {loadingSimilar ? (
+                  <>
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                    <span>検索中...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>🔍</span>
+                    <span>類似検索</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={submitting}
+                className="text-destructive hover:text-destructive/80 flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+                title="カードを削除"
+              >
+                <span>🗑️</span>
+                <span>削除</span>
+              </button>
+            </div>
+
             {currentCard.tags && (
               <div className="mb-6 flex flex-wrap gap-2">
                 {currentCard.tags.split(',').map((tag, idx) => (
@@ -525,6 +650,106 @@ export default function ReviewPage() {
             </div>
           )}
         </div>
+
+        {/* 類似カードモーダル */}
+        {showSimilarModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-card text-card-foreground max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border shadow-lg">
+              <div className="sticky top-0 flex items-center justify-between border-b bg-card p-4">
+                <h2 className="text-lg font-bold sm:text-xl">類似カード</h2>
+                <button
+                  onClick={() => setShowSimilarModal(false)}
+                  className="text-muted-foreground hover:text-foreground rounded-md p-1 transition-colors"
+                >
+                  <span className="text-xl">×</span>
+                </button>
+              </div>
+              <div className="p-4">
+                {similarCards.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    類似カードが見つかりませんでした
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {similarCards.map((card) => (
+                      <div
+                        key={card.id}
+                        className="bg-muted rounded-md border p-4 transition-colors hover:bg-muted/80"
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {card.category && (
+                              <span className="bg-secondary text-secondary-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+                                {card.category}
+                              </span>
+                            )}
+                            {card.difficulty && (
+                              <span className="text-muted-foreground text-xs">
+                                難易度: {card.difficulty}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-muted-foreground text-xs font-medium">
+                            類似度: {Math.round(card.similarityScore * 100)}%
+                          </span>
+                        </div>
+                        <div className="mb-2 font-semibold">
+                          <MarkdownRenderer content={card.question} />
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          <MarkdownRenderer content={card.answer} />
+                        </div>
+                        <div className="mt-3">
+                          <Link
+                            href={`/cards/${card.id}/edit`}
+                            className="text-primary hover:text-primary/80 text-xs font-medium underline"
+                          >
+                            編集する →
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 削除確認ダイアログ */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="bg-card text-card-foreground w-full max-w-md rounded-lg border shadow-lg p-6">
+              <h2 className="mb-4 text-lg font-bold">カードを削除しますか？</h2>
+              <p className="mb-6 text-sm text-muted-foreground">
+                この操作は取り消せません。カードとそのレビュー履歴が削除されます。
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md border px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={handleDeleteCard}
+                  disabled={deleting}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {deleting ? (
+                    <span className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                      削除中...
+                    </span>
+                  ) : (
+                    '削除する'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
