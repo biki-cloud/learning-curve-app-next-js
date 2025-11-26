@@ -36,21 +36,37 @@ export default function ReviewPage() {
   const [keyword, setKeyword] = useState('');
   const [reviewLimit, setReviewLimit] = useState<number | null>(null);
   const [showSimilarModal, setShowSimilarModal] = useState(false);
-  const [similarCards, setSimilarCards] = useState<Array<{
-    id: number;
-    question: string;
-    answer: string;
-    category: string | null;
-    difficulty: number | null;
-    similarityScore: number;
-  }>>([]);
+  const [similarCards, setSimilarCards] = useState<
+    Array<{
+      id: number;
+      question: string;
+      answer: string;
+      category: string | null;
+      difficulty: number | null;
+      similarityScore: number;
+    }>
+  >([]);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  const checkAuth = useCallback(async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+
+    setLoading(false);
+    // 実施枚数選択後に fetchReviewCards を呼ぶ
+  }, [router]);
+
   useEffect(() => {
     void checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   const fetchNextCard = useCallback(
     async (currentCardId?: number): Promise<ReviewCard[] | null> => {
@@ -196,20 +212,6 @@ export default function ReviewPage() {
     [cards, currentIndex, router, fetchNextCard, reviewLimit]
   );
 
-  const checkAuth = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session) {
-      router.push('/login');
-      return;
-    }
-
-    setLoading(false);
-    // 実施枚数選択後に fetchReviewCards を呼ぶ
-  };
-
   const fetchReviewCards = async (limit: number) => {
     setLoading(true);
     try {
@@ -297,7 +299,14 @@ export default function ReviewPage() {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data: Array<{
+          id: number;
+          question: string;
+          answer: string;
+          category: string | null;
+          difficulty: number | null;
+          similarityScore: number;
+        }> = await response.json();
         setSimilarCards(data);
         setShowSimilarModal(true);
       } else {
@@ -336,7 +345,7 @@ export default function ReviewPage() {
       if (response.ok) {
         // カードをリストから削除
         const newCards = cards.filter((_, index) => index !== currentIndex);
-        
+
         if (newCards.length === 0) {
           // カードがなくなった場合
           setCards([]);
@@ -363,15 +372,15 @@ export default function ReviewPage() {
 
   if (showLimitSelector && !loading) {
     return (
-      <div className="bg-background min-h-screen">
+      <div className="min-h-screen bg-background">
         <Navbar currentPath="/review" />
         <div className="flex items-center justify-center p-4 sm:p-6">
           <div className="w-full max-w-lg">
-            <div className="bg-card text-card-foreground rounded-lg border p-6 shadow-sm sm:p-8">
+            <div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm sm:p-8">
               <div className="mb-6 text-center sm:mb-8">
                 <div className="mb-4 text-4xl sm:text-5xl">📚</div>
                 <h2 className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl">復習を開始</h2>
-                <p className="text-muted-foreground text-sm sm:text-base">
+                <p className="text-sm text-muted-foreground sm:text-base">
                   今日は何枚のカードを復習しますか？
                 </p>
               </div>
@@ -380,7 +389,7 @@ export default function ReviewPage() {
               <div className="mb-6">
                 <label
                   htmlFor="keyword"
-                  className="text-muted-foreground mb-2 block text-sm font-medium"
+                  className="mb-2 block text-sm font-medium text-muted-foreground"
                 >
                   キーワード（オプション）
                 </label>
@@ -390,9 +399,9 @@ export default function ReviewPage() {
                   value={keyword}
                   onChange={handleKeywordChange}
                   placeholder="例: アルゴリズム、データベース、React..."
-                  className="bg-background border-input focus:ring-ring w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 />
-                <p className="text-muted-foreground mt-1 text-xs">
+                <p className="mt-1 text-xs text-muted-foreground">
                   キーワードを入力すると、関連するカードを優先して出題します
                 </p>
               </div>
@@ -407,18 +416,18 @@ export default function ReviewPage() {
                   <button
                     key={limit}
                     onClick={() => handleStartReview(limit)}
-                    className="bg-background hover:bg-accent hover:text-accent-foreground flex flex-col items-center rounded-md border p-3 transition-colors sm:p-4"
+                    className="flex flex-col items-center rounded-md border bg-background p-3 transition-colors hover:bg-accent hover:text-accent-foreground sm:p-4"
                   >
                     <div className="mb-1 text-xl sm:text-2xl">{emoji}</div>
                     <div className="text-sm font-semibold sm:text-base">{label}</div>
-                    <div className="text-muted-foreground mt-1 text-xs">{desc}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">{desc}</div>
                   </button>
                 ))}
               </div>
               <div className="border-t pt-4 sm:pt-6">
                 <button
                   onClick={() => handleStartReview(50)}
-                  className="bg-background hover:bg-accent hover:text-accent-foreground w-full rounded-md border px-4 py-2 text-sm font-medium transition-colors sm:py-3"
+                  className="w-full rounded-md border bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground sm:py-3"
                 >
                   <span className="mr-2 text-lg sm:text-xl">⚡</span>
                   カスタム: 50枚
@@ -427,7 +436,7 @@ export default function ReviewPage() {
               <div className="mt-6 text-center">
                 <Link
                   href="/home"
-                  className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
                   ← ダッシュボードに戻る
                 </Link>
@@ -441,12 +450,12 @@ export default function ReviewPage() {
 
   if (loading) {
     return (
-      <div className="bg-background min-h-screen">
+      <div className="min-h-screen bg-background">
         <Navbar currentPath="/review" />
         <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center">
           <div className="text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-            <div className="text-muted-foreground mt-4 text-sm">カードを準備中...</div>
+            <div className="mt-4 text-sm text-muted-foreground">カードを準備中...</div>
           </div>
         </div>
       </div>
@@ -455,7 +464,7 @@ export default function ReviewPage() {
 
   if (cards.length === 0) {
     return (
-      <div className="bg-background min-h-screen">
+      <div className="min-h-screen bg-background">
         <Navbar currentPath="/review" />
         <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4">
           <div className="w-full max-w-md text-center">
@@ -465,7 +474,7 @@ export default function ReviewPage() {
                 <h2 className="mb-2 text-xl font-bold tracking-tight sm:text-2xl">
                   レビューするカードがありません
                 </h2>
-                <p className="text-muted-foreground mb-6 text-sm sm:text-base">
+                <p className="mb-6 text-sm text-muted-foreground sm:text-base">
                   今日は復習対象のカードがないようです。
                   <br />
                   新しいカードを作成するか、明日またお試しください。
@@ -473,13 +482,13 @@ export default function ReviewPage() {
                 <div className="flex flex-col justify-center gap-3 sm:flex-row">
                   <Link
                     href="/cards/new"
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
+                    className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                   >
                     ➕ カードを作成
                   </Link>
                   <Link
                     href="/home"
-                    className="border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium transition-colors"
+                    className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
                     ダッシュボードに戻る
                   </Link>
@@ -491,10 +500,10 @@ export default function ReviewPage() {
                 <h2 className="mb-2 text-xl font-bold tracking-tight sm:text-2xl">
                   今日の復習は完了しました
                 </h2>
-                <p className="text-muted-foreground mb-6 text-sm sm:text-base">お疲れ様でした！</p>
+                <p className="mb-6 text-sm text-muted-foreground sm:text-base">お疲れ様でした！</p>
                 <Link
                   href="/home"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors"
+                  className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   ダッシュボードに戻る
                 </Link>
@@ -514,14 +523,14 @@ export default function ReviewPage() {
   const remaining = cards.length - currentIndex - 1;
 
   return (
-    <div className="bg-background min-h-screen">
+    <div className="min-h-screen bg-background">
       <Navbar currentPath="/review" />
       <main className="container mx-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
         <div className="mb-4 flex items-center justify-between sm:mb-6">
           <div>
-            <div className="text-muted-foreground text-xs font-medium sm:text-sm">進捗</div>
+            <div className="text-xs font-medium text-muted-foreground sm:text-sm">進捗</div>
             <div className="text-xl font-bold sm:text-2xl">{Math.round(progress)}%</div>
-            <div className="text-muted-foreground text-xs sm:text-sm">
+            <div className="text-xs text-muted-foreground sm:text-sm">
               {currentIndex + 1} / {cards.length} (残り {remaining} 枚)
             </div>
           </div>
@@ -529,9 +538,9 @@ export default function ReviewPage() {
 
         {/* プログレスバー */}
         <div className="mb-4 sm:mb-6">
-          <div className="bg-secondary h-2 w-full overflow-hidden rounded-full">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
             <div
-              className="bg-primary h-full transition-all duration-500 ease-out"
+              className="h-full bg-primary transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -539,7 +548,7 @@ export default function ReviewPage() {
 
         {/* カード表示 */}
         <div
-          className={`bg-card text-card-foreground mb-4 flex min-h-[400px] flex-col justify-between rounded-lg border p-4 shadow-sm transition-all duration-300 sm:mb-6 sm:min-h-[450px] sm:p-6 md:p-8 ${
+          className={`mb-4 flex min-h-[400px] flex-col justify-between rounded-lg border bg-card p-4 text-card-foreground shadow-sm transition-all duration-300 sm:mb-6 sm:min-h-[450px] sm:p-6 md:p-8 ${
             cardTransition ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
           }`}
         >
@@ -549,7 +558,7 @@ export default function ReviewPage() {
               <button
                 onClick={() => fetchSimilarCards(currentCard.card_id)}
                 disabled={loadingSimilar}
-                className="text-muted-foreground hover:text-foreground flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+                className="flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
                 title="類似カードを検索"
               >
                 {loadingSimilar ? (
@@ -567,7 +576,7 @@ export default function ReviewPage() {
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={submitting}
-                className="text-destructive hover:text-destructive/80 flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+                className="flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:text-destructive/80 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
                 title="カードを削除"
               >
                 <span>🗑️</span>
@@ -580,7 +589,7 @@ export default function ReviewPage() {
                 {currentCard.tags.split(',').map((tag, idx) => (
                   <span
                     key={idx}
-                    className="bg-secondary text-secondary-foreground inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors"
+                    className="inline-flex items-center rounded-full border bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground transition-colors"
                   >
                     {tag.trim()}
                   </span>
@@ -593,8 +602,8 @@ export default function ReviewPage() {
             </div>
 
             {showAnswer && (
-              <div className="bg-muted mt-6 rounded-md border p-4 sm:mt-8 sm:p-6">
-                <div className="text-muted-foreground mb-3 text-xs font-medium sm:text-sm">
+              <div className="mt-6 rounded-md border bg-muted p-4 sm:mt-8 sm:p-6">
+                <div className="mb-3 text-xs font-medium text-muted-foreground sm:text-sm">
                   答え
                 </div>
                 <div className="text-base leading-relaxed sm:text-lg">
@@ -607,20 +616,20 @@ export default function ReviewPage() {
           {!showAnswer ? (
             <button
               onClick={() => setShowAnswer(true)}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 mt-6 w-full rounded-md px-4 py-2 text-sm font-medium transition-colors sm:mt-8 sm:px-6 sm:py-3 sm:text-base"
+              className="mt-6 w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:mt-8 sm:px-6 sm:py-3 sm:text-base"
             >
               答えを見る
             </button>
           ) : (
             <div className="mt-6 space-y-3 sm:mt-8 sm:space-y-4">
-              <p className="text-muted-foreground text-center text-xs font-medium sm:text-sm">
+              <p className="text-center text-xs font-medium text-muted-foreground sm:text-sm">
                 どのくらい覚えていましたか？
               </p>
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 <button
                   onClick={() => handleRating('again')}
                   disabled={submitting}
-                  className="border-destructive/50 bg-background text-destructive hover:bg-destructive/10 flex flex-col items-center rounded-md border px-2 py-3 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-4 sm:text-sm"
+                  className="flex flex-col items-center rounded-md border border-destructive/50 bg-background px-2 py-3 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-4 sm:text-sm"
                 >
                   <div className="mb-1 text-lg sm:text-xl">❌</div>
                   <div className="font-semibold">Again</div>
@@ -628,7 +637,7 @@ export default function ReviewPage() {
                 <button
                   onClick={() => handleRating('hard')}
                   disabled={submitting}
-                  className="bg-secondary text-secondary-foreground hover:bg-secondary/80 flex flex-col items-center rounded-md border px-2 py-3 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-4 sm:text-sm"
+                  className="flex flex-col items-center rounded-md border bg-secondary px-2 py-3 text-xs font-medium text-secondary-foreground transition-colors hover:bg-secondary/80 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-4 sm:text-sm"
                 >
                   <div className="mb-1 text-lg sm:text-xl">🤔</div>
                   <div className="font-semibold">Hard</div>
@@ -636,7 +645,7 @@ export default function ReviewPage() {
                 <button
                   onClick={() => handleRating('good')}
                   disabled={submitting}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 flex flex-col items-center rounded-md px-2 py-3 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-4 sm:text-sm"
+                  className="flex flex-col items-center rounded-md bg-primary px-2 py-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-4 sm:text-sm"
                 >
                   <div className="mb-1 text-lg sm:text-xl">✅</div>
                   <div className="font-semibold">Good</div>
@@ -654,12 +663,12 @@ export default function ReviewPage() {
         {/* 類似カードモーダル */}
         {showSimilarModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-card text-card-foreground max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border shadow-lg">
+            <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border bg-card text-card-foreground shadow-lg">
               <div className="sticky top-0 flex items-center justify-between border-b bg-card p-4">
                 <h2 className="text-lg font-bold sm:text-xl">類似カード</h2>
                 <button
                   onClick={() => setShowSimilarModal(false)}
-                  className="text-muted-foreground hover:text-foreground rounded-md p-1 transition-colors"
+                  className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <span className="text-xl">×</span>
                 </button>
@@ -674,22 +683,22 @@ export default function ReviewPage() {
                     {similarCards.map((card) => (
                       <div
                         key={card.id}
-                        className="bg-muted rounded-md border p-4 transition-colors hover:bg-muted/80"
+                        className="rounded-md border bg-muted p-4 transition-colors hover:bg-muted/80"
                       >
                         <div className="mb-2 flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             {card.category && (
-                              <span className="bg-secondary text-secondary-foreground rounded-full px-2 py-0.5 text-xs font-medium">
+                              <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
                                 {card.category}
                               </span>
                             )}
                             {card.difficulty && (
-                              <span className="text-muted-foreground text-xs">
+                              <span className="text-xs text-muted-foreground">
                                 難易度: {card.difficulty}
                               </span>
                             )}
                           </div>
-                          <span className="text-muted-foreground text-xs font-medium">
+                          <span className="text-xs font-medium text-muted-foreground">
                             類似度: {Math.round(card.similarityScore * 100)}%
                           </span>
                         </div>
@@ -702,7 +711,7 @@ export default function ReviewPage() {
                         <div className="mt-3">
                           <Link
                             href={`/cards/${card.id}/edit`}
-                            className="text-primary hover:text-primary/80 text-xs font-medium underline"
+                            className="text-xs font-medium text-primary underline hover:text-primary/80"
                           >
                             編集する →
                           </Link>
@@ -719,7 +728,7 @@ export default function ReviewPage() {
         {/* 削除確認ダイアログ */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-card text-card-foreground w-full max-w-md rounded-lg border shadow-lg p-6">
+            <div className="w-full max-w-md rounded-lg border bg-card p-6 text-card-foreground shadow-lg">
               <h2 className="mb-4 text-lg font-bold">カードを削除しますか？</h2>
               <p className="mb-6 text-sm text-muted-foreground">
                 この操作は取り消せません。カードとそのレビュー履歴が削除されます。
@@ -728,14 +737,14 @@ export default function ReviewPage() {
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
                   disabled={deleting}
-                  className="border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md border px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   キャンセル
                 </button>
                 <button
                   onClick={handleDeleteCard}
                   disabled={deleting}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {deleting ? (
                     <span className="flex items-center gap-2">
