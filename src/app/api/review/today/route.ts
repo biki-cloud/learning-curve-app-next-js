@@ -44,7 +44,7 @@ export async function GET(request: Request) {
           like(cardsTable.tags, `%,${tag}`),
           eq(cardsTable.tags, tag),
         ]);
-        tagConditions.push(or(...tagOrConditions)!);
+        tagConditions.push(or(...tagOrConditions));
       }
     }
 
@@ -96,7 +96,7 @@ export async function GET(request: Request) {
       ),
     ];
     if (tagConditions.length > 0) {
-      newCardsWhereConditions.push(or(...tagConditions)!);
+      newCardsWhereConditions.push(or(...tagConditions));
     }
 
     const newCards = await db

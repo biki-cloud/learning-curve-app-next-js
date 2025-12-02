@@ -8,7 +8,7 @@ import { syncUser } from '@/server/functions/users';
 import { createInitialCardState } from '@/lib/spaced-repetition';
 import { createInitialCardStateByStage } from '@/lib/learning-curve';
 import { generateEmbedding, serializeEmbedding } from '@/lib/embeddings';
-import { eq, and, or, like, sql, isNull, isNotNull, lte, gte, lt } from 'drizzle-orm';
+import { eq, and, or, like, sql, isNull, isNotNull, lte, gte } from 'drizzle-orm';
 import { z } from 'zod';
 import { getTodayEndJST } from '@/lib/date-utils';
 import { env } from '@/env';

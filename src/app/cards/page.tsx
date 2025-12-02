@@ -42,6 +42,7 @@ export default function CardsPage() {
 
   useEffect(() => {
     void checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -52,7 +53,7 @@ export default function CardsPage() {
     if (!loading) {
       void fetchCards();
     }
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    // eslint-disable-next-line react-hooks/exhaustive-deps, @typescript-eslint/no-floating-promises
   }, [searchQuery, selectedTag, reviewStatus, proficiencyLevel]);
 
   const checkAuth = async () => {

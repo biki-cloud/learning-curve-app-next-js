@@ -92,6 +92,7 @@ export default function ReviewPage() {
         },
       });
       if (response.ok) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
         const data = await response.json() as { tags?: string[] };
         setAvailableTags(data.tags ?? []);
       }
