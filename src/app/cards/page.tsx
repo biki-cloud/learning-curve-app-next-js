@@ -35,6 +35,10 @@ export default function CardsPage() {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedCards, setSelectedCards] = useState<Set<number>>(new Set());
+  const [showTagAddModal, setShowTagAddModal] = useState(false);
+  const [tagsToAdd, setTagsToAdd] = useState<string[]>([]);
+  const [newTagInput, setNewTagInput] = useState('');
+  const [isAddingTags, setIsAddingTags] = useState(false);
 
   useEffect(() => {
     void checkAuth();
@@ -254,6 +258,96 @@ export default function CardsPage() {
     }
   };
 
+  const handleTagToggle = (tag: string) => {
+    setTagsToAdd((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const handleAddNewTag = () => {
+    const trimmedTag = newTagInput.trim();
+    if (trimmedTag && !tagsToAdd.includes(trimmedTag)) {
+      setTagsToAdd((prev) => [...prev, trimmedTag]);
+      if (!availableTags.includes(trimmedTag)) {
+        setAvailableTags((prev) => [...prev, trimmedTag].sort());
+      }
+      setNewTagInput('');
+    }
+  };
+
+  const handleRemoveTagToAdd = (tag: string) => {
+    setTagsToAdd((prev) => prev.filter((t) => t !== tag));
+  };
+
+  const handleBulkAddTags = async () => {
+    if (selectedCards.size === 0 || tagsToAdd.length === 0) {
+      return;
+    }
+
+    setIsAddingTags(true);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      // 選択されたカードの現在のタグ情報を取得
+      const selectedCardIds = Array.from(selectedCards);
+      const selectedCardsData = cards.filter((card) => selectedCardIds.includes(card.id));
+
+      // 各カードに対してタグを追加
+      const updatePromises = selectedCardsData.map(async (card) => {
+        // 既存のタグを取得
+        const existingTags = card.tags
+          ? card.tags.split(',').map((t) => t.trim()).filter((t) => t.length > 0)
+          : [];
+
+        // 新しいタグを追加（重複を避ける）
+        const allTags = [...new Set([...existingTags, ...tagsToAdd])];
+
+        // カードを更新
+        return fetch(`/api/cards/${card.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            tags: allTags.join(','),
+          }),
+        });
+      });
+
+      const results = await Promise.allSettled(updatePromises);
+      const failed = results.filter((r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.ok));
+
+      if (failed.length > 0) {
+        alert(`${failed.length}枚のカードのタグ追加に失敗しました`);
+      } else {
+        alert(`${selectedCards.size}枚のカードにタグを追加しました`);
+      }
+
+      // モーダルを閉じ、選択をリセット
+      setShowTagAddModal(false);
+      setTagsToAdd([]);
+      setNewTagInput('');
+      setIsSelectionMode(false);
+      setSelectedCards(new Set());
+      void fetchCards(false);
+      void fetchTags(); // タグ一覧を更新
+    } catch (error) {
+      console.error('Error adding tags:', error);
+      alert('タグの追加に失敗しました');
+    } finally {
+      setIsAddingTags(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -289,6 +383,13 @@ export default function CardsPage() {
                   className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
                 >
                   {selectedCards.size === cards.length ? '全解除' : '全選択'}
+                </button>
+                <button
+                  onClick={() => setShowTagAddModal(true)}
+                  disabled={selectedCards.size === 0}
+                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  🏷️ タグを追加 ({selectedCards.size})
                 </button>
                 <button
                   onClick={handleBulkDelete}
@@ -550,6 +651,111 @@ export default function CardsPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* タグ追加モーダル */}
+        {showTagAddModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-card text-card-foreground shadow-lg rounded-lg border p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <h3 className="text-lg font-semibold mb-4">
+                タグを追加 ({selectedCards.size} 枚のカード)
+              </h3>
+
+              {/* 選択されたタグの表示 */}
+              {tagsToAdd.length > 0 && (
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {tagsToAdd.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-secondary text-secondary-foreground"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTagToAdd(tag)}
+                        className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-secondary/80 focus:outline-none"
+                      >
+                        <span className="sr-only">削除</span>
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* 既存のタグから選択 */}
+              {availableTags.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs text-muted-foreground mb-2">既存のタグから選択:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {availableTags.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => handleTagToggle(tag)}
+                        className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                          tagsToAdd.includes(tag)
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-background text-foreground border-input hover:bg-accent hover:text-accent-foreground'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 新しいタグを追加 */}
+              <div className="mb-6">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    value={newTagInput}
+                    onChange={(e) => setNewTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddNewTag();
+                      }
+                    }}
+                    className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="新しいタグを入力してEnter"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddNewTag}
+                    className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    追加
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowTagAddModal(false);
+                    setTagsToAdd([]);
+                    setNewTagInput('');
+                  }}
+                  disabled={isAddingTags}
+                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkAddTags}
+                  disabled={isAddingTags || tagsToAdd.length === 0}
+                  className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isAddingTags ? '追加中...' : 'タグを追加'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </main>
