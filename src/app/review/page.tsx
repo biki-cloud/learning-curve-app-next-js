@@ -51,6 +51,8 @@ export default function ReviewPage() {
   const [loadingSimilar, setLoadingSimilar] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [similarCardToDelete, setSimilarCardToDelete] = useState<number | null>(null);
+  const [deletingSimilarCard, setDeletingSimilarCard] = useState(false);
 
   const checkAuth = useCallback(async () => {
     const {
@@ -417,6 +419,40 @@ export default function ReviewPage() {
       setDeleting(false);
     }
   }, [cards, currentIndex, router]);
+
+  const handleDeleteSimilarCard = useCallback(async (cardId: number) => {
+    setDeletingSimilarCard(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch(`/api/cards/${cardId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.ok) {
+        // 類似カードリストから削除
+        setSimilarCards((prev) => prev.filter((card) => card.id !== cardId));
+        setSimilarCardToDelete(null);
+      } else {
+        alert('カードの削除に失敗しました');
+      }
+    } catch (error) {
+      console.error('Error deleting similar card:', error);
+      alert('エラーが発生しました');
+    } finally {
+      setDeletingSimilarCard(false);
+    }
+  }, [router]);
 
   if (showLimitSelector && !loading) {
     return (
@@ -790,13 +826,22 @@ export default function ReviewPage() {
                         <div className="text-sm text-muted-foreground">
                           <MarkdownRenderer content={card.answer} />
                         </div>
-                        <div className="mt-3">
+                        <div className="mt-3 flex items-center justify-between">
                           <Link
                             href={`/cards/${card.id}/edit`}
                             className="text-xs font-medium text-primary underline hover:text-primary/80"
                           >
                             編集する →
                           </Link>
+                          <button
+                            onClick={() => setSimilarCardToDelete(card.id)}
+                            disabled={deletingSimilarCard}
+                            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="カードを削除"
+                          >
+                            <span>🗑️</span>
+                            <span>削除</span>
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -829,6 +874,41 @@ export default function ReviewPage() {
                   className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {deleting ? (
+                    <span className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                      削除中...
+                    </span>
+                  ) : (
+                    '削除する'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 類似カード削除確認ダイアログ */}
+        {similarCardToDelete !== null && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-lg border bg-card p-6 text-card-foreground shadow-lg">
+              <h2 className="mb-4 text-lg font-bold">カードを削除しますか？</h2>
+              <p className="mb-6 text-sm text-muted-foreground">
+                この操作は取り消せません。カードとそのレビュー履歴が削除されます。
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setSimilarCardToDelete(null)}
+                  disabled={deletingSimilarCard}
+                  className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={() => handleDeleteSimilarCard(similarCardToDelete)}
+                  disabled={deletingSimilarCard}
+                  className="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {deletingSimilarCard ? (
                     <span className="flex items-center gap-2">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
                       削除中...
