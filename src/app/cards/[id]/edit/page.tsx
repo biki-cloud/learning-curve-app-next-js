@@ -31,6 +31,8 @@ export default function EditCardPage({
   const [newTag, setNewTag] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [cardId, setCardId] = useState<number | null>(null);
   const [loadingTags, setLoadingTags] = useState(true);
 
@@ -199,6 +201,44 @@ export default function EditCardPage({
     }
   };
 
+  const handleDelete = async () => {
+    if (cardId === null) return;
+
+    setDeleting(true);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch(`/api/cards/${cardId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.ok) {
+        router.push('/cards');
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+        const error = await response.json() as { error?: string };
+        alert(`エラー: ${error.error ?? 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting card:', error);
+      alert('カードの削除に失敗しました');
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -325,22 +365,62 @@ export default function EditCardPage({
               </div>
             </div>
 
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4">
-              <Link
-                href="/cards"
-                className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-              >
-                キャンセル
-              </Link>
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 sm:gap-4">
+              <div className="flex gap-3 sm:gap-4">
+                <Link
+                  href="/cards"
+                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  キャンセル
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={deleting || saving}
+                  className="inline-flex items-center justify-center rounded-md border border-destructive bg-background px-4 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  削除
+                </button>
+              </div>
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || deleting}
                 className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? '保存中...' : '保存'}
               </button>
             </div>
           </form>
+
+          {/* 削除確認ダイアログ */}
+          {showDeleteConfirm && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-card text-card-foreground shadow-lg rounded-lg border p-6 max-w-md w-full">
+                <h3 className="text-lg font-semibold mb-4">カードを削除しますか？</h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                  この操作は取り消せません。カードと関連するすべてのデータが削除されます。
+                </p>
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deleting}
+                    className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="inline-flex items-center justify-center rounded-md bg-destructive text-destructive-foreground px-4 py-2 text-sm font-medium transition-colors hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deleting ? '削除中...' : '削除'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
       </main>
     </div>
   );
