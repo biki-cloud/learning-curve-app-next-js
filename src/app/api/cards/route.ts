@@ -125,15 +125,26 @@ export async function GET(request: Request) {
 
     // タグでフィルター
     if (tagFilter) {
-      conditions.push(
-        or(
-          like(cardsTable.tags, `%${tagFilter}%`),
-          like(cardsTable.tags, `%,${tagFilter},%`),
-          like(cardsTable.tags, `${tagFilter},%`),
-          like(cardsTable.tags, `%,${tagFilter}`),
-          eq(cardsTable.tags, tagFilter)
-        )!
-      );
+      if (tagFilter === '__no_tag__') {
+        // タグなしのカードをフィルター（tagsがnullまたは空文字列）
+        conditions.push(
+          or(
+            isNull(cardsTable.tags),
+            eq(cardsTable.tags, '')
+          )!
+        );
+      } else {
+        // 特定のタグでフィルター
+        conditions.push(
+          or(
+            like(cardsTable.tags, `%${tagFilter}%`),
+            like(cardsTable.tags, `%,${tagFilter},%`),
+            like(cardsTable.tags, `${tagFilter},%`),
+            like(cardsTable.tags, `%,${tagFilter}`),
+            eq(cardsTable.tags, tagFilter)
+          )!
+        );
+      }
     }
 
     // レビュー状態でフィルター
