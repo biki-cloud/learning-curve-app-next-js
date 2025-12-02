@@ -3,7 +3,7 @@
 import { db } from '@/server/db';
 import { cardsTable, cardStatesTable } from '@/server/db/schema';
 import { getAuthUser } from '@/lib/supabase/server';
-import { eq, and, lte, or, isNull } from 'drizzle-orm';
+import { eq, and, lte, or, isNull, like } from 'drizzle-orm';
 import { getTodayEndJST } from '@/lib/date-utils';
 import { selectNextCard, type CardCandidate, type CurrentCard, KEYWORD_PRIORITY_WEIGHTS, DEFAULT_WEIGHTS } from '@/lib/card-selection';
 import { generateEmbedding } from '@/lib/embeddings';
@@ -29,12 +29,38 @@ export async function GET(request: Request) {
       ? excludeIdsParam.split(',').map((id) => parseInt(id, 10)).filter((id) => !isNaN(id))
       : [];
     const keyword = url.searchParams.get('keyword'); // キーワード（オプション）
+    const tagsParam = url.searchParams.get('tags'); // タグ（カンマ区切り、オプション）
+
+    // タグフィルタリングの条件を構築
+    const tagConditions: ReturnType<typeof or>[] = [];
+    if (tagsParam) {
+      const selectedTags = tagsParam.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0);
+      if (selectedTags.length > 0) {
+        // 選択されたタグのいずれかを含むカードをフィルタリング
+        const tagOrConditions = selectedTags.flatMap((tag) => [
+          like(cardsTable.tags, `%${tag}%`),
+          like(cardsTable.tags, `%,${tag},%`),
+          like(cardsTable.tags, `${tag},%`),
+          like(cardsTable.tags, `%,${tag}`),
+          eq(cardsTable.tags, tag),
+        ]);
+        tagConditions.push(or(...tagOrConditions)!);
+      }
+    }
 
     // 日本時間の「今日」の終了時刻を使用
     const todayEndJST = getTodayEndJST();
     const now = Date.now();
 
     // 1. レビュー対象（復習カード）を集める
+    const reviewCardsWhereConditions = [
+      eq(cardsTable.user_id, user.id),
+      lte(cardStatesTable.next_review_at, todayEndJST),
+    ];
+    if (tagConditions.length > 0) {
+      reviewCardsWhereConditions.push(or(...tagConditions)!);
+    }
+
     const reviewCards = await db
       .select({
         id: cardsTable.id,
@@ -59,14 +85,20 @@ export async function GET(request: Request) {
           eq(cardStatesTable.user_id, user.id)
         )
       )
-      .where(
-        and(
-          eq(cardsTable.user_id, user.id),
-          lte(cardStatesTable.next_review_at, todayEndJST)
-        )
-      );
+      .where(and(...reviewCardsWhereConditions));
 
     // 2. 新規カードを決める（stage = 0）
+    const newCardsWhereConditions = [
+      eq(cardsTable.user_id, user.id),
+      or(
+        eq(cardStatesTable.stage, 0),
+        isNull(cardStatesTable.stage)
+      ),
+    ];
+    if (tagConditions.length > 0) {
+      newCardsWhereConditions.push(or(...tagConditions)!);
+    }
+
     const newCards = await db
       .select({
         id: cardsTable.id,
@@ -91,15 +123,7 @@ export async function GET(request: Request) {
           eq(cardStatesTable.user_id, user.id)
         )
       )
-      .where(
-        and(
-          eq(cardsTable.user_id, user.id),
-          or(
-            eq(cardStatesTable.stage, 0),
-            isNull(cardStatesTable.stage)
-          )
-        )
-      )
+      .where(and(...newCardsWhereConditions))
       .limit(MAX_NEW_PER_DAY);
 
     // 3. 今日の対象集合を作成（重複を除去）

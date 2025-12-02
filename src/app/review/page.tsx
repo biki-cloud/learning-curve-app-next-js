@@ -34,6 +34,8 @@ export default function ReviewPage() {
   const [cardTransition, setCardTransition] = useState(false);
   const [isNoCardsAtStart, setIsNoCardsAtStart] = useState(false);
   const [keyword, setKeyword] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [reviewLimit, setReviewLimit] = useState<number | null>(null);
   const [showSimilarModal, setShowSimilarModal] = useState(false);
   const [similarCards, setSimilarCards] = useState<
@@ -68,6 +70,34 @@ export default function ReviewPage() {
     void checkAuth();
   }, [checkAuth]);
 
+  useEffect(() => {
+    void fetchTags();
+  }, []);
+
+  const fetchTags = useCallback(async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        return;
+      }
+
+      const response = await fetch('/api/tags', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json() as { tags?: string[] };
+        setAvailableTags(data.tags ?? []);
+      }
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+    }
+  }, []);
+
   const fetchNextCard = useCallback(
     async (currentCardId?: number): Promise<ReviewCard[] | null> => {
       try {
@@ -94,6 +124,10 @@ export default function ReviewPage() {
         // キーワードが設定されている場合は追加
         if (keyword?.trim()) {
           params.append('keyword', keyword.trim());
+        }
+        // 選択されたタグが設定されている場合は追加
+        if (selectedTags.length > 0) {
+          params.append('tags', selectedTags.join(','));
         }
 
         const response = await fetch(`/api/review/today?${params.toString()}`, {
@@ -133,7 +167,7 @@ export default function ReviewPage() {
         return null;
       }
     },
-    [cards, keyword]
+    [cards, keyword, selectedTags]
   );
 
   const handleRating = useCallback(
@@ -230,6 +264,10 @@ export default function ReviewPage() {
       if (keyword?.trim()) {
         params.append('keyword', keyword.trim());
       }
+      // 選択されたタグが設定されている場合は追加
+      if (selectedTags.length > 0) {
+        params.append('tags', selectedTags.join(','));
+      }
 
       const response = await fetch(`/api/review/today?${params.toString()}`, {
         headers: {
@@ -279,6 +317,16 @@ export default function ReviewPage() {
 
   const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setKeyword(e.target.value);
+  };
+
+  const handleTagToggle = (tag: string) => {
+    setSelectedTags((prev) => {
+      if (prev.includes(tag)) {
+        return prev.filter((t) => t !== tag);
+      } else {
+        return [...prev, tag];
+      }
+    });
   };
 
   const fetchSimilarCards = useCallback(async (cardId: number) => {
@@ -405,6 +453,40 @@ export default function ReviewPage() {
                   キーワードを入力すると、関連するカードを優先して出題します
                 </p>
               </div>
+
+              {/* タグ選択欄 */}
+              {availableTags.length > 0 && (
+                <div className="mb-6">
+                  <label className="mb-2 block text-sm font-medium text-muted-foreground">
+                    タグでフィルター（オプション）
+                  </label>
+                  <div className="max-h-48 overflow-y-auto rounded-md border border-input bg-background p-3">
+                    <div className="flex flex-wrap gap-2">
+                      {availableTags.map((tag) => (
+                        <label
+                          key={tag}
+                          className={`inline-flex cursor-pointer items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                            selectedTags.includes(tag)
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedTags.includes(tag)}
+                            onChange={() => handleTagToggle(tag)}
+                            className="sr-only"
+                          />
+                          <span>{tag}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    選択したタグを含むカードのみを出題します
+                  </p>
+                </div>
+              )}
 
               <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4">
                 {[
