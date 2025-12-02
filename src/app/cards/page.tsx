@@ -31,6 +31,7 @@ export default function CardsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [reviewStatus, setReviewStatus] = useState('all');
+  const [proficiencyLevel, setProficiencyLevel] = useState('all');
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedCards, setSelectedCards] = useState<Set<number>>(new Set());
@@ -48,7 +49,7 @@ export default function CardsPage() {
       void fetchCards();
     }
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-  }, [searchQuery, selectedTag, reviewStatus]);
+  }, [searchQuery, selectedTag, reviewStatus, proficiencyLevel]);
 
   const checkAuth = async () => {
     const {
@@ -113,6 +114,9 @@ export default function CardsPage() {
       }
       if (reviewStatus !== 'all') {
         params.append('reviewStatus', reviewStatus);
+      }
+      if (proficiencyLevel !== 'all') {
+        params.append('proficiencyLevel', proficiencyLevel);
       }
 
       const url = `/api/cards${params.toString() ? `?${params.toString()}` : ''}`;
@@ -327,7 +331,7 @@ export default function CardsPage() {
 
         {/* フィルターUI */}
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* 検索バー */}
             <div>
               <label htmlFor="search" className="block text-sm font-medium mb-2">
@@ -381,16 +385,36 @@ export default function CardsPage() {
                 <option value="due">今日レビュー対象</option>
               </select>
             </div>
+
+            {/* 習熟度フィルター */}
+            <div>
+              <label htmlFor="proficiencyLevel" className="block text-sm font-medium mb-2">
+                習熟度
+              </label>
+              <select
+                id="proficiencyLevel"
+                value={proficiencyLevel}
+                onChange={(e) => setProficiencyLevel(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="all">すべて</option>
+                <option value="beginner">未習熟 (&lt; 2.0)</option>
+                <option value="intermediate">初級 (2.0 - 2.5)</option>
+                <option value="advanced">中級 (2.5 - 3.0)</option>
+                <option value="master">上級 (3.0+)</option>
+              </select>
+            </div>
           </div>
 
           {/* フィルターリセットボタン */}
-          {(searchQuery || selectedTag || reviewStatus !== 'all') && (
+          {(searchQuery || selectedTag || reviewStatus !== 'all' || proficiencyLevel !== 'all') && (
             <div className="mt-4 pt-4 border-t">
               <button
                 onClick={() => {
                   setSearchQuery('');
                   setSelectedTag('');
                   setReviewStatus('all');
+                  setProficiencyLevel('all');
                 }}
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >

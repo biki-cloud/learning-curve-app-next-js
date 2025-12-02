@@ -8,7 +8,7 @@ import { syncUser } from '@/server/functions/users';
 import { createInitialCardState } from '@/lib/spaced-repetition';
 import { createInitialCardStateByStage } from '@/lib/learning-curve';
 import { generateEmbedding, serializeEmbedding } from '@/lib/embeddings';
-import { eq, and, or, like, sql, isNull, isNotNull, lte } from 'drizzle-orm';
+import { eq, and, or, like, sql, isNull, isNotNull, lte, gte, lt } from 'drizzle-orm';
 import { z } from 'zod';
 import { getTodayEndJST } from '@/lib/date-utils';
 import { env } from '@/env';
@@ -109,6 +109,7 @@ export async function GET(request: Request) {
     const searchQuery = url.searchParams.get('search') ?? '';
     const tagFilter = url.searchParams.get('tag') ?? '';
     const reviewStatus = url.searchParams.get('reviewStatus') ?? ''; // 'all' | 'unreviewed' | 'reviewed' | 'due'
+    const proficiencyLevel = url.searchParams.get('proficiencyLevel') ?? ''; // 'all' | 'beginner' | 'intermediate' | 'advanced' | 'master'
 
     // ベースの条件
     const conditions = [eq(cardsTable.user_id, user.id)];
@@ -171,6 +172,43 @@ export async function GET(request: Request) {
         and(
           isNotNull(cardStatesTable.next_review_at),
           lte(cardStatesTable.next_review_at, todayEndJST)
+        )!
+      );
+    }
+
+    // 習熟度でフィルター
+    if (proficiencyLevel === 'beginner') {
+      // 未習熟（ease < 2.0 または null）
+      conditions.push(
+        or(
+          isNull(cardStatesTable.ease),
+          sql`${cardStatesTable.ease} < 2.0`
+        )!
+      );
+    } else if (proficiencyLevel === 'intermediate') {
+      // 初級（2.0 <= ease < 2.5）
+      conditions.push(
+        and(
+          isNotNull(cardStatesTable.ease),
+          gte(cardStatesTable.ease, 2.0),
+          sql`${cardStatesTable.ease} < 2.5`
+        )!
+      );
+    } else if (proficiencyLevel === 'advanced') {
+      // 中級（2.5 <= ease < 3.0）
+      conditions.push(
+        and(
+          isNotNull(cardStatesTable.ease),
+          gte(cardStatesTable.ease, 2.5),
+          sql`${cardStatesTable.ease} < 3.0`
+        )!
+      );
+    } else if (proficiencyLevel === 'master') {
+      // 上級（3.0 <= ease）
+      conditions.push(
+        and(
+          isNotNull(cardStatesTable.ease),
+          gte(cardStatesTable.ease, 3.0)
         )!
       );
     }
