@@ -2,28 +2,73 @@
 
 // ダッシュボード画面
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/navbar';
 
 // GitHubの草のようなレビュー履歴グラフコンポーネント
+type Period = '1month' | '3months' | '6months' | '1year';
+
 function ReviewHistoryGraph({ reviewHistory }: { reviewHistory: Record<string, number> }) {
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
   const [maxCount, setMaxCount] = useState(0);
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>('1month');
 
-  useEffect(() => {
-    // 最大レビュー数を計算
-    const counts = Object.values(reviewHistory);
-    setMaxCount(Math.max(...counts, 1));
-  }, [reviewHistory]);
+  // 期間に応じた日数を取得
+  const getDaysForPeriod = (period: Period): number => {
+    switch (period) {
+      case '1month':
+        return 30;
+      case '3months':
+        return 90;
+      case '6months':
+        return 180;
+      case '1year':
+        return 365;
+      default:
+        return 30;
+    }
+  };
 
-  // 過去1年間の日付を生成（今日から365日前まで）
-  const generateDateRange = () => {
+  // 期間に応じたラベルを取得
+  const getPeriodLabel = (period: Period): string => {
+    switch (period) {
+      case '1month':
+        return '1ヶ月';
+      case '3months':
+        return '3ヶ月';
+      case '6months':
+        return '6ヶ月';
+      case '1year':
+        return '1年';
+      default:
+        return '1ヶ月';
+    }
+  };
+
+  // 期間に応じた草のサイズクラスを取得
+  const getCellSizeClass = (period: Period): string => {
+    switch (period) {
+      case '1month':
+        return 'h-5 w-5';
+      case '3months':
+        return 'h-4 w-4';
+      case '6months':
+        return 'h-3.5 w-3.5';
+      case '1year':
+        return 'h-3 w-3';
+      default:
+        return 'h-3 w-3';
+    }
+  };
+
+  // 選択された期間の日付を生成
+  const generateDateRange = (days: number) => {
     const dates: string[] = [];
     const today = new Date();
-    for (let i = 0; i < 365; i++) {
+    for (let i = 0; i < days; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const year = date.getFullYear();
@@ -34,7 +79,25 @@ function ReviewHistoryGraph({ reviewHistory }: { reviewHistory: Record<string, n
     return dates.reverse(); // 古い順から新しい順に
   };
 
-  const dates = generateDateRange();
+  const days = getDaysForPeriod(selectedPeriod);
+  const dates = useMemo(() => generateDateRange(days), [days]);
+
+  // 選択された期間のデータのみをフィルタリング
+  const filteredReviewHistory = useMemo(() => {
+    const filtered: Record<string, number> = {};
+    for (const dateStr of dates) {
+      if (reviewHistory[dateStr] !== undefined) {
+        filtered[dateStr] = reviewHistory[dateStr];
+      }
+    }
+    return filtered;
+  }, [dates, reviewHistory]);
+
+  useEffect(() => {
+    // 最大レビュー数を計算（フィルタリング後のデータから）
+    const counts = Object.values(filteredReviewHistory);
+    setMaxCount(Math.max(...counts, 1));
+  }, [filteredReviewHistory]);
 
   // レビュー数に応じた色の濃淡を決定（多いほど濃い）
   const getColorIntensity = (count: number): string => {
@@ -80,26 +143,56 @@ function ReviewHistoryGraph({ reviewHistory }: { reviewHistory: Record<string, n
     weeks.push(currentWeek);
   }
 
+  const periods: Period[] = ['1month', '3months', '6months', '1year'];
+
   return (
     <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
-      <div className="mb-4 flex flex-col sm:flex-row sm:items-start sm:justify-between">
+      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="mb-4 sm:mb-0">
-          <p className="mb-2 text-sm text-muted-foreground">過去1年間のレビュー活動</p>
+          <div className="mb-3 flex items-center gap-2">
+            <p className="text-sm text-muted-foreground">
+              過去{getPeriodLabel(selectedPeriod)}のレビュー活動
+            </p>
+            {/* 期間選択タブ */}
+            <div className="flex gap-1 rounded-md border border-border bg-background p-1">
+              {periods.map((period) => (
+                <button
+                  key={period}
+                  onClick={() => setSelectedPeriod(period)}
+                  className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+                    selectedPeriod === period
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  }`}
+                >
+                  {getPeriodLabel(period)}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span>少ない</span>
             <div className="flex gap-1">
-              <div className="h-3 w-3 rounded bg-muted"></div>
-              <div className="h-3 w-3 rounded bg-green-200 dark:bg-green-300"></div>
-              <div className="h-3 w-3 rounded bg-green-400 dark:bg-green-500"></div>
-              <div className="h-3 w-3 rounded bg-green-600 dark:bg-green-700"></div>
-              <div className="h-3 w-3 rounded bg-green-800 dark:bg-green-900"></div>
+              <div className={`${getCellSizeClass(selectedPeriod)} rounded bg-muted`}></div>
+              <div
+                className={`${getCellSizeClass(selectedPeriod)} rounded bg-green-200 dark:bg-green-300`}
+              ></div>
+              <div
+                className={`${getCellSizeClass(selectedPeriod)} rounded bg-green-400 dark:bg-green-500`}
+              ></div>
+              <div
+                className={`${getCellSizeClass(selectedPeriod)} rounded bg-green-600 dark:bg-green-700`}
+              ></div>
+              <div
+                className={`${getCellSizeClass(selectedPeriod)} rounded bg-green-800 dark:bg-green-900`}
+              ></div>
             </div>
             <span>多い</span>
           </div>
         </div>
-        {hoveredDate && reviewHistory[hoveredDate] !== undefined && (
+        {hoveredDate && filteredReviewHistory[hoveredDate] !== undefined && (
           <div className="text-sm font-medium text-foreground">
-            {hoveredDate}: {reviewHistory[hoveredDate]}問
+            {hoveredDate}: {filteredReviewHistory[hoveredDate]}問
           </div>
         )}
       </div>
@@ -108,14 +201,15 @@ function ReviewHistoryGraph({ reviewHistory }: { reviewHistory: Record<string, n
           {weeks.map((week, weekIndex) => (
             <div key={weekIndex} className="flex flex-col gap-1">
               {week.map((dateStr, dayIndex) => {
+                const cellSizeClass = getCellSizeClass(selectedPeriod);
                 if (!dateStr) {
-                  return <div key={`${weekIndex}-${dayIndex}`} className="h-3 w-3"></div>;
+                  return <div key={`${weekIndex}-${dayIndex}`} className={cellSizeClass}></div>;
                 }
-                const count = reviewHistory[dateStr] ?? 0;
+                const count = filteredReviewHistory[dateStr] ?? 0;
                 return (
                   <div
                     key={dateStr}
-                    className={`h-3 w-3 cursor-pointer rounded-sm transition-all ${getColorIntensity(count)} ${
+                    className={`${cellSizeClass} cursor-pointer rounded-sm transition-all ${getColorIntensity(count)} ${
                       hoveredDate === dateStr ? 'scale-110 ring-2 ring-foreground' : ''
                     }`}
                     onMouseEnter={() => setHoveredDate(dateStr)}
@@ -129,11 +223,14 @@ function ReviewHistoryGraph({ reviewHistory }: { reviewHistory: Record<string, n
         </div>
       </div>
       <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-        <span>合計: {Object.values(reviewHistory).reduce((sum, count) => sum + count, 0)}問</span>
+        <span>
+          合計: {Object.values(filteredReviewHistory).reduce((sum, count) => sum + count, 0)}問
+        </span>
         <span>
           平均:{' '}
           {Math.round(
-            (Object.values(reviewHistory).reduce((sum, count) => sum + count, 0) / 365) * 10
+            (Object.values(filteredReviewHistory).reduce((sum, count) => sum + count, 0) / days) *
+              10
           ) / 10}
           問/日
         </span>
