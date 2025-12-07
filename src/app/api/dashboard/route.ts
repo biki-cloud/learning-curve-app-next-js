@@ -3,8 +3,13 @@
 import { db } from '@/server/db';
 import { cardsTable, cardStatesTable, reviewsTable } from '@/server/db/schema';
 import { getAuthUser } from '@/lib/supabase/server';
-import { eq, lte, and, gte, sql } from 'drizzle-orm';
-import { getTodayEndJST, getTodayStartJST, getDateStartJST, getDateEndJST, timestampToDateStringJST } from '@/lib/date-utils';
+import { eq, lte, and, gte } from 'drizzle-orm';
+import {
+  getTodayEndJST,
+  getTodayStartJST,
+  getDateStartJST,
+  timestampToDateStringJST,
+} from '@/lib/date-utils';
 
 export const runtime = 'edge';
 
@@ -24,22 +29,13 @@ export async function GET(request: Request) {
     const todayReviewCards = await db
       .select()
       .from(cardsTable)
-      .innerJoin(
-        cardStatesTable,
-        eq(cardsTable.id, cardStatesTable.card_id)
-      )
+      .innerJoin(cardStatesTable, eq(cardsTable.id, cardStatesTable.card_id))
       .where(
-        and(
-          eq(cardStatesTable.user_id, user.id),
-          lte(cardStatesTable.next_review_at, todayEndJST)
-        )
+        and(eq(cardStatesTable.user_id, user.id), lte(cardStatesTable.next_review_at, todayEndJST))
       );
 
     // 全カード数
-    const totalCards = await db
-      .select()
-      .from(cardsTable)
-      .where(eq(cardsTable.user_id, user.id));
+    const totalCards = await db.select().from(cardsTable).where(eq(cardsTable.user_id, user.id));
 
     // 今日完了したレビュー数
     const todayCompletedReviews = await db
@@ -54,24 +50,19 @@ export async function GET(request: Request) {
       );
 
     // 過去1年間のレビュー履歴を日付ごとに集計（GitHubの草のように表示するため）
-    const oneYearAgo = getDateStartJST(365);
+    const oneYearAgo: number = getDateStartJST(365);
     const allReviews = await db
       .select({
         reviewed_at: reviewsTable.reviewed_at,
       })
       .from(reviewsTable)
-      .where(
-        and(
-          eq(reviewsTable.user_id, user.id),
-          gte(reviewsTable.reviewed_at, oneYearAgo)
-        )
-      );
+      .where(and(eq(reviewsTable.user_id, user.id), gte(reviewsTable.reviewed_at, oneYearAgo)));
 
     // 日付ごとに集計
     const reviewHistoryByDate: Record<string, number> = {};
     for (const review of allReviews) {
-      const dateStr = timestampToDateStringJST(review.reviewed_at);
-      reviewHistoryByDate[dateStr] = (reviewHistoryByDate[dateStr] || 0) + 1;
+      const dateStr: string = timestampToDateStringJST(review.reviewed_at);
+      reviewHistoryByDate[dateStr] = (reviewHistoryByDate[dateStr] ?? 0) + 1;
     }
 
     return Response.json({
@@ -85,4 +76,3 @@ export async function GET(request: Request) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-

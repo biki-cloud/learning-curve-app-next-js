@@ -40,7 +40,7 @@ export function isTodayJST(timestamp: number): boolean {
  * 指定された日付（日本時間）の開始時刻（00:00:00 JST）をUTCミリ秒で返す
  * @param daysAgo 何日前か（0 = 今日、1 = 昨日、...）
  */
-export function getDateStartJST(daysAgo: number = 0): number {
+export function getDateStartJST(daysAgo = 0): number {
   const todayStart = getTodayStartJST();
   return todayStart - daysAgo * 24 * 60 * 60 * 1000;
 }
@@ -49,7 +49,7 @@ export function getDateStartJST(daysAgo: number = 0): number {
  * 指定された日付（日本時間）の終了時刻（23:59:59.999 JST）をUTCミリ秒で返す
  * @param daysAgo 何日前か（0 = 今日、1 = 昨日、...）
  */
-export function getDateEndJST(daysAgo: number = 0): number {
+export function getDateEndJST(daysAgo = 0): number {
   const dateStart = getDateStartJST(daysAgo);
   return dateStart + 24 * 60 * 60 * 1000 - 1;
 }
@@ -65,4 +65,3 @@ export function timestampToDateStringJST(timestamp: number): string {
   const day = String(date.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
-

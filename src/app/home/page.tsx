@@ -111,7 +111,7 @@ function ReviewHistoryGraph({ reviewHistory }: { reviewHistory: Record<string, n
                 if (!dateStr) {
                   return <div key={`${weekIndex}-${dayIndex}`} className="h-3 w-3"></div>;
                 }
-                const count = reviewHistory[dateStr] || 0;
+                const count = reviewHistory[dateStr] ?? 0;
                 return (
                   <div
                     key={dateStr}
@@ -292,7 +292,7 @@ export default function HomePage() {
         </div>
 
         {/* レビュー履歴（GitHubの草のようなビジュアル） */}
-        {dashboardData && dashboardData.review_history && (
+        {dashboardData?.review_history && (
           <div className="mb-8 sm:mb-12">
             <h3 className="mb-6 text-lg font-semibold text-foreground sm:text-xl">レビュー履歴</h3>
             <ReviewHistoryGraph reviewHistory={dashboardData.review_history} />
