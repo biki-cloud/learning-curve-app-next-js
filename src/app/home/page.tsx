@@ -344,26 +344,41 @@ export default function HomePage() {
           </div>
 
           {/* 今日完了したレビュー数カード */}
-          <div className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:shadow-md">
-            <div className="p-6 sm:p-8">
-              <div className="mb-4 flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">今日完了</p>
-                <span className="text-2xl">✅</span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-4xl font-semibold text-foreground sm:text-5xl">
-                  {dashboardData?.today_completed_reviews ?? 0}
-                </p>
-                <p className="text-sm text-muted-foreground">問のレビュー</p>
-              </div>
-              {dashboardData && dashboardData.today_completed_reviews > 0 && (
-                <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500"></span>
-                  今日も頑張りました！
+          {(() => {
+            const completedCount = dashboardData?.today_completed_reviews ?? 0;
+            // 完了数に応じた背景色を決定（GitHubの草のように）
+            const getCardBgColor = (count: number): string => {
+              if (count === 0) return 'bg-muted';
+              if (count <= 5) return 'bg-green-200 dark:bg-green-300';
+              if (count <= 10) return 'bg-green-400 dark:bg-green-500';
+              if (count <= 20) return 'bg-green-600 dark:bg-green-700';
+              return 'bg-green-800 dark:bg-green-900';
+            };
+            return (
+              <div
+                className={`group relative overflow-hidden rounded-lg border border-border ${getCardBgColor(completedCount)} text-card-foreground transition-all hover:shadow-md`}
+              >
+                <div className="p-6 sm:p-8">
+                  <div className="mb-4 flex items-center justify-between">
+                    <p className="text-sm font-medium text-muted-foreground">今日完了</p>
+                    <span className="text-2xl">✅</span>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-4xl font-semibold text-foreground sm:text-5xl">
+                      {completedCount}
+                    </p>
+                    <p className="text-sm text-muted-foreground">問のレビュー</p>
+                  </div>
+                  {completedCount > 0 && (
+                    <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                      今日も頑張りました！
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+            );
+          })()}
 
           {/* 全カード数カード */}
           <div className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:shadow-md">
