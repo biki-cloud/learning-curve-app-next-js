@@ -8,9 +8,145 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/navbar';
 
+// GitHubの草のようなレビュー履歴グラフコンポーネント
+function ReviewHistoryGraph({ reviewHistory }: { reviewHistory: Record<string, number> }) {
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
+  const [maxCount, setMaxCount] = useState(0);
+
+  useEffect(() => {
+    // 最大レビュー数を計算
+    const counts = Object.values(reviewHistory);
+    setMaxCount(Math.max(...counts, 1));
+  }, [reviewHistory]);
+
+  // 過去1年間の日付を生成（今日から365日前まで）
+  const generateDateRange = () => {
+    const dates: string[] = [];
+    const today = new Date();
+    for (let i = 0; i < 365; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      dates.push(`${year}-${month}-${day}`);
+    }
+    return dates.reverse(); // 古い順から新しい順に
+  };
+
+  const dates = generateDateRange();
+
+  // レビュー数に応じた色の濃淡を決定（多いほど濃い）
+  const getColorIntensity = (count: number): string => {
+    if (count === 0) return 'bg-muted';
+    if (maxCount === 0) return 'bg-muted';
+    const intensity = count / maxCount;
+    // 両方のモードで数字が大きいほど濃い色（多いほど濃い）
+    if (intensity < 0.25) return 'bg-green-200 dark:bg-green-300';
+    if (intensity < 0.5) return 'bg-green-400 dark:bg-green-500';
+    if (intensity < 0.75) return 'bg-green-600 dark:bg-green-700';
+    return 'bg-green-800 dark:bg-green-900';
+  };
+
+  // 週の開始日を取得（月曜日を週の開始とする）
+  const getWeekStart = (dateStr: string): number => {
+    const date = new Date(dateStr);
+    const day = date.getDay();
+    return day === 0 ? 6 : day - 1; // 月曜日 = 0, 日曜日 = 6
+  };
+
+  // 日付を週ごとにグループ化
+  const weeks: string[][] = [];
+  let currentWeek: string[] = [];
+  let currentWeekStart = -1;
+
+  for (const dateStr of dates) {
+    const weekStart = getWeekStart(dateStr);
+    if (currentWeekStart === -1) {
+      currentWeekStart = weekStart;
+      // 最初の週の前に空の日を追加
+      for (let i = 0; i < weekStart; i++) {
+        currentWeek.push('');
+      }
+    }
+    currentWeek.push(dateStr);
+    if (weekStart === 6) {
+      // 日曜日で週が終わる
+      weeks.push(currentWeek);
+      currentWeek = [];
+    }
+  }
+  if (currentWeek.length > 0) {
+    weeks.push(currentWeek);
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-start sm:justify-between">
+        <div className="mb-4 sm:mb-0">
+          <p className="mb-2 text-sm text-muted-foreground">過去1年間のレビュー活動</p>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span>少ない</span>
+            <div className="flex gap-1">
+              <div className="h-3 w-3 rounded bg-muted"></div>
+              <div className="h-3 w-3 rounded bg-green-200 dark:bg-green-300"></div>
+              <div className="h-3 w-3 rounded bg-green-400 dark:bg-green-500"></div>
+              <div className="h-3 w-3 rounded bg-green-600 dark:bg-green-700"></div>
+              <div className="h-3 w-3 rounded bg-green-800 dark:bg-green-900"></div>
+            </div>
+            <span>多い</span>
+          </div>
+        </div>
+        {hoveredDate && reviewHistory[hoveredDate] !== undefined && (
+          <div className="text-sm font-medium text-foreground">
+            {hoveredDate}: {reviewHistory[hoveredDate]}問
+          </div>
+        )}
+      </div>
+      <div className="overflow-x-auto">
+        <div className="flex min-w-max gap-1">
+          {weeks.map((week, weekIndex) => (
+            <div key={weekIndex} className="flex flex-col gap-1">
+              {week.map((dateStr, dayIndex) => {
+                if (!dateStr) {
+                  return <div key={`${weekIndex}-${dayIndex}`} className="h-3 w-3"></div>;
+                }
+                const count = reviewHistory[dateStr] || 0;
+                return (
+                  <div
+                    key={dateStr}
+                    className={`h-3 w-3 cursor-pointer rounded-sm transition-all ${getColorIntensity(count)} ${
+                      hoveredDate === dateStr ? 'scale-110 ring-2 ring-foreground' : ''
+                    }`}
+                    onMouseEnter={() => setHoveredDate(dateStr)}
+                    onMouseLeave={() => setHoveredDate(null)}
+                    title={`${dateStr}: ${count}問`}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+        <span>合計: {Object.values(reviewHistory).reduce((sum, count) => sum + count, 0)}問</span>
+        <span>
+          平均:{' '}
+          {Math.round(
+            (Object.values(reviewHistory).reduce((sum, count) => sum + count, 0) / 365) * 10
+          ) / 10}
+          問/日
+        </span>
+      </div>
+    </div>
+  );
+}
+
 interface DashboardData {
   today_review_count: number;
+  today_completed_reviews: number;
   total_cards: number;
+  review_history: Record<string, number>; // 日付文字列（YYYY-MM-DD）をキー、レビュー数を値とするオブジェクト
 }
 
 export default function HomePage() {
@@ -53,7 +189,7 @@ export default function HomePage() {
       });
       if (response.ok) {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-        const data = await response.json() as DashboardData;
+        const data = (await response.json()) as DashboardData;
         setDashboardData(data);
       }
     } catch (error) {
@@ -65,7 +201,7 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
           <div className="mt-4 text-sm text-muted-foreground">読み込み中...</div>
@@ -77,34 +213,56 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar currentPath="/home" />
-      <main className="container mx-auto py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <main className="container mx-auto px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
         {/* ウェルカムメッセージ */}
         <div className="mb-8 sm:mb-12">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-foreground mb-2">
+          <h1 className="mb-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl md:text-5xl">
             ダッシュボード
           </h1>
-          <p className="text-muted-foreground text-base sm:text-lg">今日も学習を続けましょう</p>
+          <p className="text-base text-muted-foreground sm:text-lg">今日も学習を続けましょう</p>
         </div>
 
         {/* 統計カード */}
-        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 mb-8 sm:mb-12">
+        <div className="mb-8 grid grid-cols-1 gap-4 sm:mb-12 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
           {/* 今日のレビューカード */}
           <div className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:shadow-md">
             <div className="p-6 sm:p-8">
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4 flex items-center justify-between">
                 <p className="text-sm font-medium text-muted-foreground">今日のレビュー</p>
                 <span className="text-2xl">📚</span>
               </div>
               <div className="space-y-1">
-                <p className="text-4xl sm:text-5xl font-semibold text-foreground">
+                <p className="text-4xl font-semibold text-foreground sm:text-5xl">
                   {dashboardData?.today_review_count ?? 0}
                 </p>
                 <p className="text-sm text-muted-foreground">枚のカード</p>
               </div>
               {dashboardData && dashboardData.today_review_count > 0 && (
                 <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground"></span>
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-foreground"></span>
                   レビュー待ち
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 今日完了したレビュー数カード */}
+          <div className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:shadow-md">
+            <div className="p-6 sm:p-8">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">今日完了</p>
+                <span className="text-2xl">✅</span>
+              </div>
+              <div className="space-y-1">
+                <p className="text-4xl font-semibold text-foreground sm:text-5xl">
+                  {dashboardData?.today_completed_reviews ?? 0}
+                </p>
+                <p className="text-sm text-muted-foreground">問のレビュー</p>
+              </div>
+              {dashboardData && dashboardData.today_completed_reviews > 0 && (
+                <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                  今日も頑張りました！
                 </div>
               )}
             </div>
@@ -113,19 +271,19 @@ export default function HomePage() {
           {/* 全カード数カード */}
           <div className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:shadow-md">
             <div className="p-6 sm:p-8">
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4 flex items-center justify-between">
                 <p className="text-sm font-medium text-muted-foreground">全カード数</p>
                 <span className="text-2xl">🗂️</span>
               </div>
               <div className="space-y-1">
-                <p className="text-4xl sm:text-5xl font-semibold text-foreground">
+                <p className="text-4xl font-semibold text-foreground sm:text-5xl">
                   {dashboardData?.total_cards ?? 0}
                 </p>
                 <p className="text-sm text-muted-foreground">枚のカード</p>
               </div>
               {dashboardData && dashboardData.total_cards > 0 && (
                 <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-foreground"></span>
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-foreground"></span>
                   学習中
                 </div>
               )}
@@ -133,22 +291,30 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* レビュー履歴（GitHubの草のようなビジュアル） */}
+        {dashboardData && dashboardData.review_history && (
+          <div className="mb-8 sm:mb-12">
+            <h3 className="mb-6 text-lg font-semibold text-foreground sm:text-xl">レビュー履歴</h3>
+            <ReviewHistoryGraph reviewHistory={dashboardData.review_history} />
+          </div>
+        )}
+
         {/* アクションボタン */}
         <div className="mb-8 sm:mb-12">
-          <h3 className="text-lg sm:text-xl font-semibold mb-6 text-foreground">
+          <h3 className="mb-6 text-lg font-semibold text-foreground sm:text-xl">
             クイックアクション
           </h3>
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {/* レビュー開始 */}
             <Link
               href="/review"
-              className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:shadow-md hover:border-foreground/20"
+              className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:border-foreground/20 hover:shadow-md"
             >
               <div className="p-6 sm:p-8">
-                <div className="text-3xl sm:text-4xl mb-3">🎯</div>
-                <div className="font-semibold text-base sm:text-lg mb-1">レビュー開始</div>
-                <div className="text-sm text-muted-foreground mb-4">今日の復習を始める</div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                <div className="mb-3 text-3xl sm:text-4xl">🎯</div>
+                <div className="mb-1 text-base font-semibold sm:text-lg">レビュー開始</div>
+                <div className="mb-4 text-sm text-muted-foreground">今日の復習を始める</div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground transition-colors group-hover:text-foreground">
                   <span>今すぐ始める</span>
                   <span>→</span>
                 </div>
@@ -158,13 +324,13 @@ export default function HomePage() {
             {/* AI自動作成 */}
             <Link
               href="/cards/ai"
-              className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:shadow-md hover:border-foreground/20"
+              className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:border-foreground/20 hover:shadow-md"
             >
               <div className="p-6 sm:p-8">
-                <div className="text-3xl sm:text-4xl mb-3">✨</div>
-                <div className="font-semibold text-base sm:text-lg mb-1">AI自動作成</div>
-                <div className="text-sm text-muted-foreground mb-4">AIでカードを生成</div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                <div className="mb-3 text-3xl sm:text-4xl">✨</div>
+                <div className="mb-1 text-base font-semibold sm:text-lg">AI自動作成</div>
+                <div className="mb-4 text-sm text-muted-foreground">AIでカードを生成</div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground transition-colors group-hover:text-foreground">
                   <span>AIに任せる</span>
                   <span>→</span>
                 </div>
@@ -174,13 +340,13 @@ export default function HomePage() {
             {/* カード作成 */}
             <Link
               href="/cards/new"
-              className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:shadow-md hover:border-foreground/20"
+              className="group relative overflow-hidden rounded-lg border border-border bg-card text-card-foreground transition-all hover:border-foreground/20 hover:shadow-md"
             >
               <div className="p-6 sm:p-8">
-                <div className="text-3xl sm:text-4xl mb-3">➕</div>
-                <div className="font-semibold text-base sm:text-lg mb-1">カード作成</div>
-                <div className="text-sm text-muted-foreground mb-4">新しいカードを追加</div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground group-hover:text-foreground transition-colors">
+                <div className="mb-3 text-3xl sm:text-4xl">➕</div>
+                <div className="mb-1 text-base font-semibold sm:text-lg">カード作成</div>
+                <div className="mb-4 text-sm text-muted-foreground">新しいカードを追加</div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground transition-colors group-hover:text-foreground">
                   <span>手動で作成</span>
                   <span>→</span>
                 </div>
