@@ -93,7 +93,7 @@ export default function ReviewPage() {
       });
       if (response.ok) {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-        const data = await response.json() as { tags?: string[] };
+        const data = (await response.json()) as { tags?: string[] };
         setAvailableTags(data.tags ?? []);
       }
     } catch (error) {
@@ -421,39 +421,42 @@ export default function ReviewPage() {
     }
   }, [cards, currentIndex, router]);
 
-  const handleDeleteSimilarCard = useCallback(async (cardId: number) => {
-    setDeletingSimilarCard(true);
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+  const handleDeleteSimilarCard = useCallback(
+    async (cardId: number) => {
+      setDeletingSimilarCard(true);
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      if (!session) {
-        router.push('/login');
-        return;
+        if (!session) {
+          router.push('/login');
+          return;
+        }
+
+        const response = await fetch(`/api/cards/${cardId}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+
+        if (response.ok) {
+          // 類似カードリストから削除
+          setSimilarCards((prev) => prev.filter((card) => card.id !== cardId));
+          setSimilarCardToDelete(null);
+        } else {
+          alert('カードの削除に失敗しました');
+        }
+      } catch (error) {
+        console.error('Error deleting similar card:', error);
+        alert('エラーが発生しました');
+      } finally {
+        setDeletingSimilarCard(false);
       }
-
-      const response = await fetch(`/api/cards/${cardId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (response.ok) {
-        // 類似カードリストから削除
-        setSimilarCards((prev) => prev.filter((card) => card.id !== cardId));
-        setSimilarCardToDelete(null);
-      } else {
-        alert('カードの削除に失敗しました');
-      }
-    } catch (error) {
-      console.error('Error deleting similar card:', error);
-      alert('エラーが発生しました');
-    } finally {
-      setDeletingSimilarCard(false);
-    }
-  }, [router]);
+    },
+    [router]
+  );
 
   if (showLimitSelector && !loading) {
     return (
@@ -692,6 +695,14 @@ export default function ReviewPage() {
                   </>
                 )}
               </button>
+              <Link
+                href={`/cards/${currentCard.card_id}/edit`}
+                className="flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:text-primary/80 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+                title="カードを編集"
+              >
+                <span>✏️</span>
+                <span>編集</span>
+              </Link>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={submitting}
