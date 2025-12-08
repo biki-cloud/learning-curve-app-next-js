@@ -40,6 +40,7 @@ export default function AICardPage() {
   const [similarCardsMap, setSimilarCardsMap] = useState<Map<number, SimilarCard[]>>(new Map());
   const [loadingSimilarCards, setLoadingSimilarCards] = useState<Set<number>>(new Set());
   const [expandedSimilarCardIds, setExpandedSimilarCardIds] = useState<Set<number>>(new Set());
+  const [isPromptTipsExpanded, setIsPromptTipsExpanded] = useState(false);
 
   useEffect(() => {
     void fetchTags();
@@ -350,45 +351,68 @@ export default function AICardPage() {
 
         {/* プロンプトのコツ */}
         <div className="mb-4 rounded-lg border border-border bg-muted p-4 sm:mb-6 sm:p-6">
-          <h3 className="mb-3 text-base font-semibold text-foreground sm:text-lg">
-            💡 プロンプトのコツ
-          </h3>
-          <div className="space-y-4">
-            <div>
-              <h4 className="mb-2 text-sm font-medium text-gray-900">✅ 良い例</h4>
-              <ul className="ml-2 list-inside list-disc space-y-1 text-sm text-gray-700">
-                <li>
-                  <strong>具体的なテーマ:</strong> "ReactのHooksについて" →
-                  useState、useEffect、useContextなどに分割
-                </li>
-                <li>
-                  <strong>比較テーマ:</strong> "HTTPとHTTPSの違い" →
-                  HTTPとは、HTTPSとは、違いは何かに分割
-                </li>
-                <li>
-                  <strong>概念の集合:</strong> "トランザクション分離レベル" → 各レベルの説明に分割
-                </li>
-                <li>
-                  <strong>手順や要素:</strong> "Pythonの辞書操作" → 追加、削除、取得などに分割
-                </li>
-              </ul>
+          <button
+            type="button"
+            onClick={() => setIsPromptTipsExpanded(!isPromptTipsExpanded)}
+            className="flex w-full items-center justify-between gap-2 text-left"
+          >
+            <h3 className="text-base font-semibold text-foreground sm:text-lg">
+              💡 プロンプトのコツ
+            </h3>
+            <svg
+              className={`h-5 w-5 shrink-0 text-foreground transition-transform ${
+                isPromptTipsExpanded ? 'rotate-180' : ''
+              }`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          {isPromptTipsExpanded && (
+            <div className="mt-3 space-y-4">
+              <div>
+                <h4 className="mb-2 text-sm font-medium text-gray-900">✅ 良い例</h4>
+                <ul className="ml-2 list-inside list-disc space-y-1 text-sm text-gray-700">
+                  <li>
+                    <strong>具体的なテーマ:</strong> "ReactのHooksについて" →
+                    useState、useEffect、useContextなどに分割
+                  </li>
+                  <li>
+                    <strong>比較テーマ:</strong> "HTTPとHTTPSの違い" →
+                    HTTPとは、HTTPSとは、違いは何かに分割
+                  </li>
+                  <li>
+                    <strong>概念の集合:</strong> "トランザクション分離レベル" → 各レベルの説明に分割
+                  </li>
+                  <li>
+                    <strong>手順や要素:</strong> "Pythonの辞書操作" → 追加、削除、取得などに分割
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="mb-2 text-sm font-medium text-gray-900">❌ 避けるべき例</h4>
+                <ul className="ml-2 list-inside list-disc space-y-1 text-sm text-gray-700">
+                  <li>あまりにも広範囲なテーマ（例: "プログラミング全般"）</li>
+                  <li>曖昧な表現（例: "いろいろ教えて"）</li>
+                  <li>既に1つの概念に絞られているもの（例: "useStateとは？"）</li>
+                </ul>
+              </div>
+              <div className="border-t border-blue-200 pt-3">
+                <p className="text-xs text-gray-600">
+                  💡 <strong>ヒント:</strong>{' '}
+                  複数の概念を含むテーマを入力すると、AIが自動的に適切な粒度で分割してくれます。
+                  単一の概念でも問題ありませんが、その場合は1枚のカードとして生成されます。
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="mb-2 text-sm font-medium text-gray-900">❌ 避けるべき例</h4>
-              <ul className="ml-2 list-inside list-disc space-y-1 text-sm text-gray-700">
-                <li>あまりにも広範囲なテーマ（例: "プログラミング全般"）</li>
-                <li>曖昧な表現（例: "いろいろ教えて"）</li>
-                <li>既に1つの概念に絞られているもの（例: "useStateとは？"）</li>
-              </ul>
-            </div>
-            <div className="border-t border-blue-200 pt-3">
-              <p className="text-xs text-gray-600">
-                💡 <strong>ヒント:</strong>{' '}
-                複数の概念を含むテーマを入力すると、AIが自動的に適切な粒度で分割してくれます。
-                単一の概念でも問題ありませんが、その場合は1枚のカードとして生成されます。
-              </p>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* 入力フォーム */}
