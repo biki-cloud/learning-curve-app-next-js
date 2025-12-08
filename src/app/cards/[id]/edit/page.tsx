@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/navbar';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 interface Card {
   id: number;
@@ -17,11 +18,7 @@ interface Card {
   tags: string | null;
 }
 
-export default function EditCardPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function EditCardPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [card, setCard] = useState<Card | null>(null);
   const [question, setQuestion] = useState('');
@@ -35,6 +32,8 @@ export default function EditCardPage({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [cardId, setCardId] = useState<number | null>(null);
   const [loadingTags, setLoadingTags] = useState(true);
+  const [showQuestionPreview, setShowQuestionPreview] = useState(false);
+  const [showAnswerPreview, setShowAnswerPreview] = useState(false);
 
   useEffect(() => {
     void checkAuth();
@@ -65,7 +64,7 @@ export default function EditCardPage({
 
       if (response.ok) {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-        const data = await response.json() as { tags?: string[] };
+        const data = (await response.json()) as { tags?: string[] };
         setAvailableTags(data.tags ?? []);
       }
     } catch (error) {
@@ -143,7 +142,10 @@ export default function EditCardPage({
           setAnswer(foundCard.answer);
           // タグを配列に変換
           const tagsArray = foundCard.tags
-            ? foundCard.tags.split(',').map((t) => t.trim()).filter((t) => t.length > 0)
+            ? foundCard.tags
+                .split(',')
+                .map((t) => t.trim())
+                .filter((t) => t.length > 0)
             : [];
           setSelectedTags(tagsArray);
         } else {
@@ -190,7 +192,7 @@ export default function EditCardPage({
         router.push('/cards');
       } else {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-        const error = await response.json() as { error?: string };
+        const error = (await response.json()) as { error?: string };
         alert(`エラー: ${error.error ?? 'Unknown error'}`);
       }
     } catch (error) {
@@ -227,7 +229,7 @@ export default function EditCardPage({
         router.push('/cards');
       } else {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-        const error = await response.json() as { error?: string };
+        const error = (await response.json()) as { error?: string };
         alert(`エラー: ${error.error ?? 'Unknown error'}`);
       }
     } catch (error) {
@@ -241,7 +243,7 @@ export default function EditCardPage({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-lg">読み込み中...</div>
       </div>
     );
@@ -254,175 +256,234 @@ export default function EditCardPage({
   return (
     <div className="min-h-screen bg-background">
       <Navbar currentPath="/cards" />
-      <main className="container mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8 max-w-3xl">
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4 sm:mb-6">カード編集</h2>
+      <main className="container mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+        <h2 className="mb-4 text-xl font-bold text-foreground sm:mb-6 sm:text-2xl">カード編集</h2>
 
-          <form onSubmit={handleSubmit} className="bg-card text-card-foreground shadow-sm rounded-lg border p-4 sm:p-6">
-            <div className="mb-4">
-              <label htmlFor="question" className="block text-sm font-medium text-foreground mb-2">
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-lg border bg-card p-4 text-card-foreground shadow-sm sm:p-6"
+        >
+          <div className="mb-4">
+            <div className="mb-2 flex items-center justify-between">
+              <label htmlFor="question" className="block text-sm font-medium text-foreground">
                 質問 / タイトル <span className="text-destructive">*</span>
               </label>
+              <button
+                type="button"
+                onClick={() => setShowQuestionPreview(!showQuestionPreview)}
+                className="flex items-center gap-1 text-xs font-medium text-primary transition-colors hover:text-primary/80"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                </svg>
+                {showQuestionPreview ? '編集' : 'マークダウンで表示'}
+              </button>
+            </div>
+            {showQuestionPreview ? (
+              <div className="min-h-[80px] rounded-md border border-input bg-background px-3 py-2">
+                <MarkdownRenderer content={question || '質問を入力してください'} />
+              </div>
+            ) : (
               <textarea
                 id="question"
                 required
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 rows={3}
-                className="flex h-auto w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                className="flex h-auto w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
-            </div>
+            )}
+          </div>
 
-            <div className="mb-4">
-              <label htmlFor="answer" className="block text-sm font-medium text-foreground mb-2">
+          <div className="mb-4">
+            <div className="mb-2 flex items-center justify-between">
+              <label htmlFor="answer" className="block text-sm font-medium text-foreground">
                 回答 <span className="text-destructive">*</span>
                 <span className="ml-2 text-xs text-muted-foreground">(Markdown対応)</span>
               </label>
-              <textarea
-                id="answer"
-                required
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                rows={12}
-                className="flex h-auto w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Markdown形式で記述できます。コードブロック、リスト、リンクなどが使用可能です。
-              </p>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                タグ
-              </label>
-
-              {/* 選択されたタグの表示 */}
-              {selectedTags.length > 0 && (
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {selectedTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-secondary text-secondary-foreground"
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-secondary/80 focus:outline-none"
-                      >
-                        <span className="sr-only">削除</span>
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* 既存のタグから選択 */}
-              {!loadingTags && availableTags.length > 0 && (
-                <div className="mb-3">
-                  <p className="text-xs text-muted-foreground mb-2">既存のタグから選択:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {availableTags.map((tag) => (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => handleTagToggle(tag)}
-                        className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
-                          selectedTags.includes(tag)
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-background text-foreground border-input hover:bg-accent hover:text-accent-foreground'
-                        }`}
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* 新しいタグを追加 */}
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="text"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddNewTag();
-                    }
-                  }}
-                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  placeholder="新しいタグを入力してEnter"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddNewTag}
-                  className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-                >
-                  追加
-                </button>
-              </div>
-            </div>
-
-            <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 sm:gap-4">
-              <div className="flex gap-3 sm:gap-4">
-                <Link
-                  href="/cards"
-                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
-                >
-                  キャンセル
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={deleting || saving}
-                  className="inline-flex items-center justify-center rounded-md border border-destructive bg-background px-4 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  削除
-                </button>
-              </div>
               <button
-                type="submit"
-                disabled={saving || deleting}
-                className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
+                onClick={() => setShowAnswerPreview(!showAnswerPreview)}
+                className="flex items-center gap-1 text-xs font-medium text-primary transition-colors hover:text-primary/80"
               >
-                {saving ? '保存中...' : '保存'}
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                </svg>
+                {showAnswerPreview ? '編集' : 'マークダウンで表示'}
               </button>
             </div>
-          </form>
-
-          {/* 削除確認ダイアログ */}
-          {showDeleteConfirm && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-              <div className="bg-card text-card-foreground shadow-lg rounded-lg border p-6 max-w-md w-full">
-                <h3 className="text-lg font-semibold mb-4">カードを削除しますか？</h3>
-                <p className="text-sm text-muted-foreground mb-6">
-                  この操作は取り消せません。カードと関連するすべてのデータが削除されます。
+            {showAnswerPreview ? (
+              <div className="min-h-[300px] rounded-md border border-input bg-background px-3 py-2">
+                <MarkdownRenderer content={answer || '回答を入力してください'} />
+              </div>
+            ) : (
+              <>
+                <textarea
+                  id="answer"
+                  required
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  rows={12}
+                  className="flex h-auto w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Markdown形式で記述できます。コードブロック、リスト、リンクなどが使用可能です。
                 </p>
-                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteConfirm(false)}
-                    disabled={deleting}
-                    className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+              </>
+            )}
+          </div>
+
+          <div className="mb-6">
+            <label className="mb-2 block text-sm font-medium text-foreground">タグ</label>
+
+            {/* 選択されたタグの表示 */}
+            {selectedTags.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {selectedTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center rounded-full bg-secondary px-3 py-1 text-sm font-medium text-secondary-foreground"
                   >
-                    キャンセル
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className="inline-flex items-center justify-center rounded-md bg-destructive text-destructive-foreground px-4 py-2 text-sm font-medium transition-colors hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {deleting ? '削除中...' : '削除'}
-                  </button>
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(tag)}
+                      className="ml-2 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-secondary/80 focus:outline-none"
+                    >
+                      <span className="sr-only">削除</span>×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* 既存のタグから選択 */}
+            {!loadingTags && availableTags.length > 0 && (
+              <div className="mb-3">
+                <p className="mb-2 text-xs text-muted-foreground">既存のタグから選択:</p>
+                <div className="flex flex-wrap gap-2">
+                  {availableTags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => handleTagToggle(tag)}
+                      className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
+                        selectedTags.includes(tag)
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
                 </div>
               </div>
+            )}
+
+            {/* 新しいタグを追加 */}
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                type="text"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddNewTag();
+                  }
+                }}
+                className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder="新しいタグを入力してEnter"
+              />
+              <button
+                type="button"
+                onClick={handleAddNewTag}
+                className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                追加
+              </button>
             </div>
-          )}
+          </div>
+
+          <div className="flex flex-col-reverse justify-between gap-3 sm:flex-row sm:gap-4">
+            <div className="flex gap-3 sm:gap-4">
+              <Link
+                href="/cards"
+                className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                キャンセル
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={deleting || saving}
+                className="inline-flex items-center justify-center rounded-md border border-destructive bg-background px-4 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                削除
+              </button>
+            </div>
+            <button
+              type="submit"
+              disabled={saving || deleting}
+              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saving ? '保存中...' : '保存'}
+            </button>
+          </div>
+        </form>
+
+        {/* 削除確認ダイアログ */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-lg border bg-card p-6 text-card-foreground shadow-lg">
+              <h3 className="mb-4 text-lg font-semibold">カードを削除しますか？</h3>
+              <p className="mb-6 text-sm text-muted-foreground">
+                この操作は取り消せません。カードと関連するすべてのデータが削除されます。
+              </p>
+              <div className="flex flex-col-reverse justify-end gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="inline-flex items-center justify-center rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {deleting ? '削除中...' : '削除'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
 }
-
