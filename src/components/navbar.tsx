@@ -53,65 +53,76 @@ export default function Navbar({ currentPath }: NavbarProps) {
         <div className="flex h-14 items-center justify-between">
           <div className="flex items-center gap-8">
             {/* ロゴ */}
-            <Link 
-              href="/home" 
+            <Link
+              href="/home"
               className="flex items-center space-x-2 transition-opacity hover:opacity-80"
             >
               <span className="text-xl">📚</span>
-              <span className="font-semibold text-lg text-foreground">
-                LearnCurve
-              </span>
+              <span className="text-lg font-semibold text-foreground">LearnCurve</span>
             </Link>
-            
+
             {/* デスクトップナビゲーション */}
             <nav className="hidden md:flex md:items-center md:gap-1">
               <Link
                 href="/home"
-                className={`relative px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                className={`relative rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   currentPath === '/home'
                     ? 'text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {currentPath === '/home' && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full"></span>
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-foreground"></span>
                 )}
                 ダッシュボード
               </Link>
               <Link
                 href="/cards"
-                className={`relative px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                className={`relative rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   currentPath === '/cards'
                     ? 'text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {currentPath === '/cards' && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full"></span>
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-foreground"></span>
                 )}
                 カード一覧
               </Link>
               <Link
                 href="/review"
-                className={`relative px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                className={`relative rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   currentPath === '/review'
                     ? 'text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {currentPath === '/review' && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full"></span>
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-foreground"></span>
                 )}
                 レビュー
               </Link>
+              <Link
+                href="/help"
+                className={`relative rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  currentPath === '/help'
+                    ? 'text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {currentPath === '/help' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-foreground"></span>
+                )}
+                ヘルプ
+              </Link>
             </nav>
           </div>
-          
+
           <div className="flex items-center gap-3">
             {userEmail && (
               <>
                 {/* デスクトップユーザーメニュー */}
-                <div className="hidden sm:block relative">
+                <div className="relative hidden sm:block">
                   <button
                     onClick={() => setShowDropdown(!showDropdown)}
                     className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium transition-colors hover:bg-accent focus:outline-none"
@@ -140,18 +151,15 @@ export default function Navbar({ currentPath }: NavbarProps) {
                   </button>
                   {showDropdown && (
                     <>
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setShowDropdown(false)}
-                      />
-                      <div className="absolute right-0 mt-2 w-56 rounded-lg border border-border bg-popover p-1 shadow-lg z-50">
-                        <div className="px-3 py-2 border-b border-border">
+                      <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
+                      <div className="absolute right-0 z-50 mt-2 w-56 rounded-lg border border-border bg-popover p-1 shadow-lg">
+                        <div className="border-b border-border px-3 py-2">
                           <p className="text-sm font-medium text-foreground">{userEmail}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">アカウント</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">アカウント</p>
                         </div>
                         <button
                           onClick={handleLogout}
-                          className="w-full rounded-sm px-2 py-1.5 text-sm text-left transition-colors hover:bg-accent hover:text-accent-foreground"
+                          className="w-full rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
                         >
                           ログアウト
                         </button>
@@ -159,9 +167,9 @@ export default function Navbar({ currentPath }: NavbarProps) {
                     </>
                   )}
                 </div>
-                
+
                 {/* モバイルユーザーアイコン */}
-                <div className="sm:hidden relative">
+                <div className="relative sm:hidden">
                   <button
                     onClick={() => setShowDropdown(!showDropdown)}
                     className="flex items-center justify-center rounded-md p-2 transition-colors hover:bg-accent focus:outline-none"
@@ -172,18 +180,15 @@ export default function Navbar({ currentPath }: NavbarProps) {
                   </button>
                   {showDropdown && (
                     <>
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setShowDropdown(false)}
-                      />
-                      <div className="absolute right-0 mt-2 w-56 rounded-lg border border-border bg-popover p-1 shadow-lg z-50">
-                        <div className="px-3 py-2 border-b border-border">
+                      <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
+                      <div className="absolute right-0 z-50 mt-2 w-56 rounded-lg border border-border bg-popover p-1 shadow-lg">
+                        <div className="border-b border-border px-3 py-2">
                           <p className="text-sm font-medium text-foreground">{userEmail}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">アカウント</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">アカウント</p>
                         </div>
                         <button
                           onClick={handleLogout}
-                          className="w-full rounded-sm px-2 py-1.5 text-sm text-left transition-colors hover:bg-accent hover:text-accent-foreground"
+                          className="w-full rounded-sm px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
                         >
                           ログアウト
                         </button>
@@ -193,20 +198,15 @@ export default function Navbar({ currentPath }: NavbarProps) {
                 </div>
               </>
             )}
-            
+
             {/* モバイルメニューボタン */}
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none"
+              className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none md:hidden"
               aria-label="メニューを開く"
             >
               {showMobileMenu ? (
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -215,12 +215,7 @@ export default function Navbar({ currentPath }: NavbarProps) {
                   />
                 </svg>
               ) : (
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -232,15 +227,15 @@ export default function Navbar({ currentPath }: NavbarProps) {
             </button>
           </div>
         </div>
-        
+
         {/* モバイルメニュー */}
         {showMobileMenu && (
-          <div className="md:hidden border-t border-border">
-            <div className="px-2 pt-2 pb-3 space-y-1">
+          <div className="border-t border-border md:hidden">
+            <div className="space-y-1 px-2 pb-3 pt-2">
               <Link
                 href="/home"
                 onClick={() => setShowMobileMenu(false)}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                className={`block rounded-md px-3 py-2 text-base font-medium transition-colors ${
                   currentPath === '/home'
                     ? 'bg-accent text-accent-foreground'
                     : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -251,7 +246,7 @@ export default function Navbar({ currentPath }: NavbarProps) {
               <Link
                 href="/cards"
                 onClick={() => setShowMobileMenu(false)}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                className={`block rounded-md px-3 py-2 text-base font-medium transition-colors ${
                   currentPath === '/cards'
                     ? 'bg-accent text-accent-foreground'
                     : 'text-muted-foreground hover:bg-accent hover:text-foreground'
@@ -262,13 +257,24 @@ export default function Navbar({ currentPath }: NavbarProps) {
               <Link
                 href="/review"
                 onClick={() => setShowMobileMenu(false)}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                className={`block rounded-md px-3 py-2 text-base font-medium transition-colors ${
                   currentPath === '/review'
                     ? 'bg-accent text-accent-foreground'
                     : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                 }`}
               >
                 レビュー
+              </Link>
+              <Link
+                href="/help"
+                onClick={() => setShowMobileMenu(false)}
+                className={`block rounded-md px-3 py-2 text-base font-medium transition-colors ${
+                  currentPath === '/help'
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                }`}
+              >
+                ヘルプ
               </Link>
             </div>
           </div>
@@ -277,4 +283,3 @@ export default function Navbar({ currentPath }: NavbarProps) {
     </nav>
   );
 }
-
