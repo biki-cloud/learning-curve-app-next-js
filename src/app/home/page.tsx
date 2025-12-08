@@ -388,12 +388,19 @@ export default function HomePage() {
           {/* 今日完了したレビュー数カード */}
           {(() => {
             const completedCount = dashboardData?.today_completed_reviews ?? 0;
-            // 完了数に応じた背景色を決定（GitHubの草のように）
+            // レビュー履歴の最大値を取得（今日完了の色をレビュー履歴の草の色に合わせるため）
+            const reviewHistoryMax = dashboardData?.review_history
+              ? Math.max(...Object.values(dashboardData.review_history), 1)
+              : 1;
+            // 完了数に応じた背景色を決定（レビュー履歴の草と同じロジック）
             const getCardBgColor = (count: number): string => {
               if (count === 0) return 'bg-muted';
-              if (count <= 5) return 'bg-green-200 dark:bg-green-300';
-              if (count <= 10) return 'bg-green-400 dark:bg-green-500';
-              if (count <= 20) return 'bg-green-600 dark:bg-green-700';
+              if (reviewHistoryMax === 0) return 'bg-muted';
+              const intensity = count / reviewHistoryMax;
+              // レビュー履歴の草と同じ色の濃淡を使用
+              if (intensity < 0.25) return 'bg-green-200 dark:bg-green-300';
+              if (intensity < 0.5) return 'bg-green-400 dark:bg-green-500';
+              if (intensity < 0.75) return 'bg-green-600 dark:bg-green-700';
               return 'bg-green-800 dark:bg-green-900';
             };
             return (
