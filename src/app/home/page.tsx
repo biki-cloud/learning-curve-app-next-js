@@ -118,8 +118,13 @@ function ReviewHistoryGraph({ reviewHistory }: { reviewHistory: Record<string, n
     return day === 0 ? 6 : day - 1; // 月曜日 = 0, 日曜日 = 6
   };
 
-  // 日付を週ごとにグループ化
-  const weeks: string[][] = [];
+  // 日付を週ごとにグループ化し、月の情報も保持
+  interface WeekData {
+    dates: string[];
+    month: number; // 週の最初の日付の月（1-12）
+    monthLabel: string; // 月のラベル（例：1月）
+  }
+  const weeks: WeekData[] = [];
   let currentWeek: string[] = [];
   let currentWeekStart = -1;
 
@@ -135,13 +140,39 @@ function ReviewHistoryGraph({ reviewHistory }: { reviewHistory: Record<string, n
     currentWeek.push(dateStr);
     if (weekStart === 6) {
       // 日曜日で週が終わる
-      weeks.push(currentWeek);
+      // 週の最初の有効な日付から月を取得
+      const firstDateStr = currentWeek.find((d) => d !== '');
+      let month = 1;
+      let monthLabel = '1月';
+      if (firstDateStr) {
+        const date = new Date(firstDateStr);
+        month = date.getMonth() + 1;
+        monthLabel = `${month}月`;
+      }
+      weeks.push({ dates: currentWeek, month, monthLabel });
       currentWeek = [];
     }
   }
   if (currentWeek.length > 0) {
-    weeks.push(currentWeek);
+    const firstDateStr = currentWeek.find((d) => d !== '');
+    let month = 1;
+    let monthLabel = '1月';
+    if (firstDateStr) {
+      const date = new Date(firstDateStr);
+      month = date.getMonth() + 1;
+      monthLabel = `${month}月`;
+    }
+    weeks.push({ dates: currentWeek, month, monthLabel });
   }
+
+  // 月のラベルを表示するかどうかを判定（前の週と月が異なる場合に表示）
+  const shouldShowMonthLabel = (weekIndex: number): boolean => {
+    if (weekIndex === 0) return true;
+    const currentWeek = weeks[weekIndex];
+    const previousWeek = weeks[weekIndex - 1];
+    if (!currentWeek || !previousWeek) return false;
+    return currentWeek.month !== previousWeek.month;
+  };
 
   const periods: Period[] = ['1month', '3months', '6months', '1year'];
 
@@ -200,7 +231,15 @@ function ReviewHistoryGraph({ reviewHistory }: { reviewHistory: Record<string, n
         <div className="flex min-w-max gap-0.5 sm:gap-1">
           {weeks.map((week, weekIndex) => (
             <div key={weekIndex} className="flex flex-col gap-0.5 sm:gap-1">
-              {week.map((dateStr, dayIndex) => {
+              {/* 月のラベル（週の最初の行に表示） */}
+              {shouldShowMonthLabel(weekIndex) && (
+                <div className="flex h-3.5 items-start text-[10px] text-muted-foreground sm:h-5 sm:text-xs">
+                  {week.monthLabel}
+                </div>
+              )}
+              {!shouldShowMonthLabel(weekIndex) && <div className="h-3.5 sm:h-5"></div>}
+              {/* 日付セル */}
+              {week.dates.map((dateStr, dayIndex) => {
                 const cellSizeClass = getCellSizeClass(selectedPeriod);
                 if (!dateStr) {
                   return <div key={`${weekIndex}-${dayIndex}`} className={cellSizeClass}></div>;
