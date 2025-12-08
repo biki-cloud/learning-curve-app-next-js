@@ -762,7 +762,7 @@ export default function ReviewPage() {
                   className="flex flex-col items-center rounded-md border border-destructive/50 bg-background px-2 py-3 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-4 sm:text-sm"
                 >
                   <div className="mb-1 text-lg sm:text-xl">❌</div>
-                  <div className="font-semibold">Again</div>
+                  <div className="font-semibold">覚えていない</div>
                 </button>
                 <button
                   onClick={() => handleRating('hard')}
@@ -770,7 +770,7 @@ export default function ReviewPage() {
                   className="flex flex-col items-center rounded-md border bg-secondary px-2 py-3 text-xs font-medium text-secondary-foreground transition-colors hover:bg-secondary/80 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-4 sm:text-sm"
                 >
                   <div className="mb-1 text-lg sm:text-xl">🤔</div>
-                  <div className="font-semibold">Hard</div>
+                  <div className="font-semibold">難しい</div>
                 </button>
                 <button
                   onClick={() => handleRating('good')}
@@ -778,7 +778,7 @@ export default function ReviewPage() {
                   className="flex flex-col items-center rounded-md bg-primary px-2 py-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-4 sm:text-sm"
                 >
                   <div className="mb-1 text-lg sm:text-xl">✅</div>
-                  <div className="font-semibold">Good</div>
+                  <div className="font-semibold">覚えている</div>
                 </button>
               </div>
               {submitting && (

@@ -26,11 +26,7 @@ export function createInitialCardState(now: number): CardState {
 /**
  * 評価に基づいてカード状態を更新
  */
-export function updateCardState(
-  currentState: CardState,
-  rating: Rating,
-  now: number
-): CardState {
+export function updateCardState(currentState: CardState, rating: Rating, now: number): CardState {
   const msPerDay = 24 * 60 * 60 * 1000;
   let newEase = currentState.ease;
   let newInterval = currentState.interval_days;
@@ -38,21 +34,21 @@ export function updateCardState(
 
   switch (rating) {
     case 'again':
-      // Again（覚えてない）
+      // 覚えていない
       newEase = Math.max(1.2, currentState.ease - 0.3);
       newInterval = 1;
       nextReviewAt = now + msPerDay; // 1日後
       break;
 
     case 'hard':
-      // Hard（怪しい）
+      // 難しい
       newEase = currentState.ease - 0.05;
       newInterval = Math.floor(currentState.interval_days * 1.2);
       nextReviewAt = now + newInterval * msPerDay;
       break;
 
     case 'good':
-      // Good（覚えてた）
+      // 覚えている
       newEase = currentState.ease + 0.05;
       newInterval = Math.floor(currentState.interval_days * currentState.ease);
       nextReviewAt = now + newInterval * msPerDay;
@@ -67,4 +63,3 @@ export function updateCardState(
     last_reviewed_at: now,
   };
 }
-
