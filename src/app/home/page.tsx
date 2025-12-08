@@ -223,7 +223,7 @@ function ReviewHistoryGraph({ reviewHistory }: { reviewHistory: Record<string, n
           ))}
         </div>
       </div>
-      <div className="mt-2 hidden flex-col gap-2 text-xs text-muted-foreground sm:mt-4 sm:flex sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-2 flex flex-col gap-2 text-xs text-muted-foreground sm:mt-4 sm:flex-row sm:items-center sm:justify-between">
         <span>
           合計: {Object.values(filteredReviewHistory).reduce((sum, count) => sum + count, 0)}問
         </span>
