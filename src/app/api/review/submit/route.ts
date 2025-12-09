@@ -32,20 +32,14 @@ export async function POST(request: Request) {
     const [currentState] = await db
       .select()
       .from(cardStatesTable)
-      .where(
-        and(
-          eq(cardStatesTable.card_id, card_id),
-          eq(cardStatesTable.user_id, user.id)
-        )
-      )
+      .where(and(eq(cardStatesTable.card_id, card_id), eq(cardStatesTable.user_id, user.id)))
       .limit(1);
 
     if (!currentState) {
       return Response.json({ error: 'Card state not found' }, { status: 404 });
     }
 
-    // カード状態を更新（既存のeaseベースとstageベースの両方を更新）
-    const isCorrect = rating === 'good';
+    // カード状態を更新（stageベースをメインに、easeベースは互換性のため維持）
     const newState = updateCardState(
       {
         ease: currentState.ease,
@@ -59,9 +53,10 @@ export async function POST(request: Request) {
     );
 
     const currentStage = currentState.stage ?? 0;
-    const newStateByStage = updateCardStateByStage(currentStage, isCorrect, now);
+    const newStateByStage = updateCardStateByStage(currentStage, rating, now);
 
     // 正答率を計算（簡易版：直近の評価から）
+    const isCorrect = rating === 'good';
     const successRate = isCorrect ? 1.0 : 0.0;
 
     await db
@@ -94,4 +89,3 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-

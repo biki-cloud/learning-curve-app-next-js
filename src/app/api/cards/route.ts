@@ -128,12 +128,7 @@ export async function GET(request: Request) {
     if (tagFilter) {
       if (tagFilter === '__no_tag__') {
         // タグなしのカードをフィルター（tagsがnullまたは空文字列）
-        conditions.push(
-          or(
-            isNull(cardsTable.tags),
-            eq(cardsTable.tags, '')
-          )!
-        );
+        conditions.push(or(isNull(cardsTable.tags), eq(cardsTable.tags, ''))!);
       } else {
         // 特定のタグでフィルター
         conditions.push(
@@ -151,19 +146,11 @@ export async function GET(request: Request) {
     // レビュー状態でフィルター
     if (reviewStatus === 'unreviewed') {
       // 未レビュー（rep_count が 0 または null）
-      conditions.push(
-        or(
-          eq(cardStatesTable.rep_count, 0),
-          isNull(cardStatesTable.rep_count)
-        )!
-      );
+      conditions.push(or(eq(cardStatesTable.rep_count, 0), isNull(cardStatesTable.rep_count))!);
     } else if (reviewStatus === 'reviewed') {
       // レビュー済み（rep_count > 0）
       conditions.push(
-        and(
-          isNotNull(cardStatesTable.rep_count),
-          sql`${cardStatesTable.rep_count} > 0`
-        )!
+        and(isNotNull(cardStatesTable.rep_count), sql`${cardStatesTable.rep_count} > 0`)!
       );
     } else if (reviewStatus === 'due') {
       // 今日レビュー対象（next_review_at <= 今日の終わり、日本時間）
@@ -179,12 +166,7 @@ export async function GET(request: Request) {
     // 習熟度でフィルター
     if (proficiencyLevel === 'beginner') {
       // 未習熟（ease < 2.0 または null）
-      conditions.push(
-        or(
-          isNull(cardStatesTable.ease),
-          sql`${cardStatesTable.ease} < 2.0`
-        )!
-      );
+      conditions.push(or(isNull(cardStatesTable.ease), sql`${cardStatesTable.ease} < 2.0`)!);
     } else if (proficiencyLevel === 'intermediate') {
       // 初級（2.0 <= ease < 2.5）
       conditions.push(
@@ -205,12 +187,7 @@ export async function GET(request: Request) {
       );
     } else if (proficiencyLevel === 'master') {
       // 上級（3.0 <= ease）
-      conditions.push(
-        and(
-          isNotNull(cardStatesTable.ease),
-          gte(cardStatesTable.ease, 3.0)
-        )!
-      );
+      conditions.push(and(isNotNull(cardStatesTable.ease), gte(cardStatesTable.ease, 3.0))!);
     }
 
     const cards = await db
@@ -231,10 +208,7 @@ export async function GET(request: Request) {
       .from(cardsTable)
       .leftJoin(
         cardStatesTable,
-        and(
-          eq(cardStatesTable.card_id, cardsTable.id),
-          eq(cardStatesTable.user_id, user.id)
-        )
+        and(eq(cardStatesTable.card_id, cardsTable.id), eq(cardStatesTable.user_id, user.id))
       )
       .where(and(...conditions))
       .orderBy(cardsTable.created_at);
@@ -245,4 +219,3 @@ export async function GET(request: Request) {
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
