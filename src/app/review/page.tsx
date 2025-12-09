@@ -473,6 +473,27 @@ export default function ReviewPage() {
                 </p>
               </div>
 
+              {/* 枚数選択 */}
+              <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3">
+                {[
+                  { limit: 5, label: '5枚', emoji: '☕' },
+                  { limit: 10, label: '10枚', emoji: '📖' },
+                  { limit: 15, label: '15枚', emoji: '📚' },
+                  { limit: 20, label: '20枚', emoji: '🔥' },
+                  { limit: 30, label: '30枚', emoji: '💪' },
+                  { limit: 50, label: '50枚', emoji: '⚡' },
+                ].map(({ limit, label, emoji }) => (
+                  <button
+                    key={limit}
+                    onClick={() => handleStartReview(limit)}
+                    className="flex flex-col items-center justify-center rounded-lg border-2 border-input bg-background p-4 transition-all hover:border-primary hover:bg-accent hover:text-accent-foreground active:scale-95 sm:p-5"
+                  >
+                    <div className="mb-2 text-2xl sm:text-3xl">{emoji}</div>
+                    <div className="text-sm font-semibold sm:text-base">{label}</div>
+                  </button>
+                ))}
+              </div>
+
               {/* キーワード入力欄 */}
               <div className="mb-6">
                 <label
@@ -527,34 +548,6 @@ export default function ReviewPage() {
                   </p>
                 </div>
               )}
-
-              <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4">
-                {[
-                  { limit: 5, label: '5枚', desc: '軽め', emoji: '☕' },
-                  { limit: 10, label: '10枚', desc: '標準', emoji: '📖' },
-                  { limit: 20, label: '20枚', desc: '集中', emoji: '🔥' },
-                  { limit: 30, label: '30枚', desc: '本格的', emoji: '💪' },
-                ].map(({ limit, label, desc, emoji }) => (
-                  <button
-                    key={limit}
-                    onClick={() => handleStartReview(limit)}
-                    className="flex flex-col items-center rounded-md border bg-background p-3 transition-colors hover:bg-accent hover:text-accent-foreground sm:p-4"
-                  >
-                    <div className="mb-1 text-xl sm:text-2xl">{emoji}</div>
-                    <div className="text-sm font-semibold sm:text-base">{label}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">{desc}</div>
-                  </button>
-                ))}
-              </div>
-              <div className="border-t pt-4 sm:pt-6">
-                <button
-                  onClick={() => handleStartReview(50)}
-                  className="w-full rounded-md border bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground sm:py-3"
-                >
-                  <span className="mr-2 text-lg sm:text-xl">⚡</span>
-                  カスタム: 50枚
-                </button>
-              </div>
               <div className="mt-6 text-center">
                 <Link
                   href="/home"
